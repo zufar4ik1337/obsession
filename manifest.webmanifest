@@ -1,7 +1,7 @@
 {
-  "name": "English 20 — челлендж",
-  "short_name": "English 20",
-  "description": "20 минут английского каждый день: отчёты, цели и общий словарь",
+  "name": "Obsession",
+  "short_name": "Obsession",
+  "description": "всего 20 минут в день",
   "lang": "ru",
   "start_url": "./",
   "scope": "./",

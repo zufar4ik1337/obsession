@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="English 20">
-<title>English 20 — челлендж</title>
+<meta name="apple-mobile-web-app-title" content="Obsession">
+<title>Obsession</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
@@ -60,6 +60,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .wrap{max-width:1180px;margin:0 auto;padding:calc(24px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));display:grid;gap:22px}
 h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;letter-spacing:-.01em}
 h1{font-size:clamp(26px,4vw,40px);line-height:1.1}
+.brand{font-size:clamp(44px,9vw,92px);line-height:.95;letter-spacing:-.035em}
+.tagline{font-size:clamp(15px,2vw,19px);color:var(--muted);letter-spacing:.02em}
 h2{font-size:18px}
 h3{font-size:15px}
 .muted{color:var(--muted)}
@@ -218,9 +220,9 @@ textarea{resize:vertical;min-height:84px}
 <div class="wrap">
   <header class="top">
     <div class="title-block">
-      <h1>English: <span>20 минут</span> в день</h1>
-      <div id="authBox" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"></div>
-      <div class="muted" id="subtitle">Челлендж для троих: 20 минут английского каждый день и короткий отчёт в своей колонке.</div>
+      <h1 class="brand">Obsession</h1>
+      <div class="tagline" id="subtitle">всего 20 минут в день</div>
+      <div id="authBox" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px"></div>
     </div>
     <div class="progress" aria-live="polite">
       <div class="row"><b id="dayLabel" class="num">День —</b><span class="muted num" id="dateLabel"></span></div>
