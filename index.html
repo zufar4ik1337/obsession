@@ -191,6 +191,16 @@ textarea{resize:vertical;min-height:84px}
 
 /* dictionary */
 #dictPanel .card{max-width:520px}
+.cbtn{border:1px solid var(--line);background:transparent;border-radius:99px;padding:3px 10px;cursor:pointer;font-size:13px;color:var(--muted);white-space:nowrap}
+.cbtn.has{color:var(--ink);font-weight:600}
+.cbtn[aria-expanded="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.dict tr.crow td:first-child{border-left:4px solid var(--pc);font-weight:400}
+.cbox{display:grid;gap:10px;padding:4px 0 8px}
+.citem{display:grid;gap:4px;background:color-mix(in srgb, var(--bg) 55%, transparent);border-radius:12px;padding:8px 10px}
+.chead2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px}
+.ctext{white-space:pre-wrap;overflow-wrap:anywhere;font-weight:400}
+.cform{display:flex;gap:8px}
+.cform input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 10px}
 .dict{width:100%;border-collapse:collapse;font-size:14px}
 .dict th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
 .dict td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -583,6 +593,24 @@ textarea{resize:vertical;min-height:84px}
     });
   }
 
+  const openComments = new Set();
+  const wordKey = (en) => encodeURIComponent(String(en).toLowerCase().trim()).replace(/\./g,"%2E").slice(0,300);
+  function commentsFor(wk){
+    const out=[];
+    for(const id in state.members){ const c = state.members[id].comments; const m = c && typeof c==="object" ? c[wk] : null;
+      if(m && typeof m==="object") for(const cid in m){ const v=m[cid]; if(v && typeof v.text==="string" && v.text) out.push({id, cid, text:v.text.slice(0,300), at:String(v.at||"")}); } }
+    return out.sort((a,b)=>a.at.localeCompare(b.at));
+  }
+  function timeAgo(iso){ const d = new Date(iso); if(isNaN(d)) return ""; const k = keyOf(d); return (k===today()?"сегодня":human(k))+", "+pad(d.getHours())+":"+pad(d.getMinutes()); }
+  async function addComment(wk, text){
+    const cid = Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    return saveMember({comments:{[wk]:{[cid]:{text:text.slice(0,300), at:new Date().toISOString()}}}});
+  }
+  async function deleteComment(wk, cid){
+    if(!state.fieldDelete) return;
+    await saveMember({comments:{[wk]:{[cid]: state.fieldDelete()}}});
+  }
+
   let cardIdx = -1, cardShown=false;
   function allWords(){
     const out=[]; const seen=new Set();
@@ -611,9 +639,39 @@ textarea{resize:vertical;min-height:84px}
     if(cardIdx<0||cardIdx>=words.length) pick(); else draw();
     const wrap = el("div","tablewrap");
     const tbl = el("table","dict"); const thead=el("thead"); const hr=el("tr");
-    ["Слово","Перевод","Кто добавил","Когда"].forEach(h=>hr.appendChild(el("th",null,h))); thead.appendChild(hr); tbl.appendChild(thead);
+    ["Слово","Перевод","Кто добавил","Когда","Комментарии"].forEach(h=>hr.appendChild(el("th",null,h))); thead.appendChild(hr); tbl.appendChild(thead);
     const tb = el("tbody");
-    words.forEach(w => { const tr=el("tr"); tr.style.setProperty("--pc", colorOf(w.id)); const who=el("td"); const ch=el("span","who-chip",nameOf(w.id)); ch.style.setProperty("--pc", colorOf(w.id)); ch.style.setProperty("--pci", inkOf(w.id)); who.appendChild(ch); tr.append(el("td",null,w.en),el("td",null,w.ru),who,el("td","muted num",human(w.k))); tb.appendChild(tr); });
+    words.forEach(w => {
+      const tr=el("tr"); tr.style.setProperty("--pc", colorOf(w.id));
+      const who=el("td"); const ch=el("span","who-chip",nameOf(w.id)); ch.style.setProperty("--pc", colorOf(w.id)); ch.style.setProperty("--pci", inkOf(w.id)); who.appendChild(ch);
+      const wk = wordKey(w.en); const list = commentsFor(wk); const open = openComments.has(wk);
+      const cb = el("button","cbtn"+(list.length?" has":""), list.length ? "💬 "+list.length : "💬"); cb.type="button";
+      cb.setAttribute("aria-expanded", String(open)); cb.setAttribute("aria-label", "Комментарии к слову "+w.en);
+      cb.addEventListener("click", () => { open ? openComments.delete(wk) : openComments.add(wk); renderAll(); });
+      const ctd = el("td"); ctd.appendChild(cb);
+      tr.append(el("td",null,w.en),el("td",null,w.ru),who,el("td","muted num",human(w.k)),ctd); tb.appendChild(tr);
+      if(open){
+        const r2 = el("tr","crow"); r2.style.setProperty("--pc", colorOf(w.id)); const td = el("td"); td.colSpan = 5;
+        const box = el("div","cbox");
+        if(!list.length) box.appendChild(el("div","muted","Пока нет комментариев."));
+        list.forEach(c => {
+          const it = el("div","citem");
+          const head = el("div","chead2"); const chip = el("span","who-chip",nameOf(c.id)); chip.style.setProperty("--pc", colorOf(c.id)); chip.style.setProperty("--pci", inkOf(c.id));
+          head.append(chip, el("span","muted num",timeAgo(c.at)));
+          if(c.id===state.me){ const d = el("button","btn ghost","Удалить"); d.type="button"; d.addEventListener("click", () => deleteComment(wk, c.cid)); head.appendChild(d); }
+          it.append(head, el("div","ctext",c.text)); box.appendChild(it);
+        });
+        if(state.me && state.members[state.me]){
+          const f = el("form","cform"); const inp = el("input"); inp.type="text"; inp.id="cmt-"+wk; inp.maxLength=300; inp.placeholder="Пример, ассоциация, произношение…"; inp.setAttribute("aria-label","Новый комментарий");
+          if(drafts[inp.id]) inp.value = drafts[inp.id];
+          inp.addEventListener("input", () => { drafts[inp.id] = inp.value; });
+          const b = el("button","btn primary","Отправить"); b.type="submit";
+          f.addEventListener("submit", async (ev) => { ev.preventDefault(); const t = inp.value.trim(); if(!t) return; b.disabled=true; if(await addComment(wk, t)){ delete drafts[inp.id]; inp.value=""; } b.disabled=false; });
+          f.append(inp, b); box.appendChild(f);
+        } else box.appendChild(el("div","muted", state.me ? "Займи колонку, чтобы комментировать." : "Войди через Google, чтобы комментировать."));
+        td.appendChild(box); r2.appendChild(td); tb.appendChild(r2);
+      }
+    });
     tbl.appendChild(tb); wrap.appendChild(tbl); v.appendChild(wrap);
     v.appendChild(shareNode(words));
   }
@@ -651,7 +709,7 @@ textarea{resize:vertical;min-height:84px}
   }
 
   function renderAll(){
-    const ae = document.activeElement; const typing = ae && ae.id && /^(nick\d|goal-\w+|rename)$/.test(ae.id) ? {id:ae.id, v:ae.value, s:ae.selectionStart, e:ae.selectionEnd} : null;
+    const ae = document.activeElement; const typing = ae && ae.id && /^(nick\d|goal-\w+|rename|cmt-.+)$/.test(ae.id) ? {id:ae.id, v:ae.value, s:ae.selectionStart, e:ae.selectionEnd} : null;
     const inForm = ae && $("reportForm").contains(ae) ? ae : null;
     let sel=null; try{ if(inForm && "selectionStart" in inForm) sel=[inForm.selectionStart, inForm.selectionEnd]; }catch(e){}
     renderHeader(); renderCols(); renderDict(); renderOwner(); refreshFormMode();
@@ -792,7 +850,7 @@ textarea{resize:vertical;min-height:84px}
         onSnapshot: (next, err) => r.onSnapshot(s => next({ docs: s.docs.map(d => ({ id:d.id, exists:d.exists, data:()=>d.data() })), metadata: s.metadata }), e => err && err(wrapErr(e)))
       }; }
     };
-    state.db = db;
+    state.db = db; state.fieldDelete = () => firebase.firestore.FieldValue.delete();
     state.user = {
       isOwner: () => !!(auth.currentUser && auth.currentUser.email === OWNER_EMAIL),
       profiles: async () => ({})
