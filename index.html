@@ -538,7 +538,9 @@ textarea{resize:vertical;min-height:84px}
     const map = slotMap();
     const joined = !!(state.me && state.members[state.me]);
     const canJoin = state.db && state.me && state.canWrite!==false && !joined;
-    [1,2,3].forEach(n => {
+    // своя колонка всегда первой, остальные по порядку
+    const order = [1,2,3].sort((a,b) => (map[b]===state.me && state.me ? 1 : 0) - (map[a]===state.me && state.me ? 1 : 0));
+    order.forEach(n => {
       const id = map[n];
       const col = el("section","col"+(id && id===state.me?" mine":"")); col.style.setProperty("--pc", SLOT_COLOR[n]); col.style.setProperty("--pci", SLOT_INK[n]);
       const head = el("div","chead");
