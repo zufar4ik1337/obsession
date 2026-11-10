@@ -270,6 +270,19 @@ textarea{resize:vertical;min-height:84px}
 .btns.left{justify-content:flex-start}
 .sharebox{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:16px}
 .join .rename{max-width:460px}
+.cols{display:grid;gap:14px;align-items:start}
+.cols.n1{grid-template-columns:minmax(0,640px)}
+.cols.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cols.n4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1100px){.cols.n3,.cols.n4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.cols.n2,.cols.n3,.cols.n4{grid-template-columns:1fr}}
+.cols.n4 .col{padding:14px}
+.cols.n4 .streak .sn b{font-size:22px}
+.bankhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.banksum{font-family:var(--display);font-weight:700;font-size:clamp(28px,5vw,44px);line-height:1}
+.brow .bname .num{min-width:1.4em}
+.wrap{max-width:1400px}
 
 </style>
 </head>
@@ -379,8 +392,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     let total=0, full=0, words=0;
     for(const k in days){ const v=mins(days[k]); total+=v; if(v>=g) full++; words += Array.isArray(days[k].words)?days[k].words.length:0; }
     const fined = s.breaks.length * penaltyOf(cid);
-    const paid = Math.max(0, Number(((ch(cid)||{}).paid||{})[uid]) || 0);
-    return Object.assign(s, { total, full, words, fined, paid, debt: Math.max(0, fined - paid), todayMin: mins(days[t]) });
+    return Object.assign(s, { total, full, words, fined, debt: fined, todayMin: mins(days[t]) });
   }
 
   // ---------- emoji ----------
@@ -572,15 +584,20 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!state.signedIn) app.appendChild(el("div","msg","Войди через Google, чтобы вступить и писать отчёты. Смотреть можно и без входа."));
 
     const ids = memberIds(cid);
-    let sel = state.selected[cid];
-    if(!sel || !memberOf(cid, sel)) sel = isMember(cid) ? state.me : ids[0];
-
-    const grid = el("div","cgrid");
-    const left = el("div","stack"); const right = el("div","stack");
-    left.appendChild(boardNode(cid, ids, sel));
-    left.appendChild(bankNode(cid, ids));
-    if(sel) right.appendChild(profileNode(cid, sel));
-    grid.append(right, left); app.appendChild(grid);
+    const MAXCOLS = 4;
+    const ranked = ids.map(uid => ({ uid, st: statsFor(cid, uid) }))
+      .sort((x,y) => (y.uid===state.me) - (x.uid===state.me) || y.st.streak - x.st.streak || y.st.full - x.st.full || ids.indexOf(x.uid) - ids.indexOf(y.uid));
+    let shown = ranked.slice(0, MAXCOLS).map(r => r.uid);
+    const sel = state.selected[cid];
+    if(sel && memberOf(cid, sel) && !shown.includes(sel)) shown[shown.length-1] = sel;   // выбранный в таблице занимает последнюю колонку
+    if(!ids.length) app.appendChild(el("div","empty","Пока никого. Вступи первым."));
+    else {
+      const cols = el("section","cols n"+shown.length);
+      shown.forEach(uid => cols.appendChild(profileNode(cid, uid)));
+      app.appendChild(cols);
+    }
+    if(ids.length > MAXCOLS) app.appendChild(boardNode(cid, ranked, shown));
+    app.appendChild(bankNode(cid, ids));
     if(c.dictionary) app.appendChild(dictNode(cid));
     if(canManage(cid)) app.appendChild(settingsNode(cid));
     else if(isMember(cid)) app.appendChild(leaveNode(cid));
@@ -599,25 +616,22 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     p.appendChild(f); return p;
   }
 
-  function boardNode(cid, ids, sel){
+  function boardNode(cid, ranked, shown){
     const p = el("section","panel");
-    p.appendChild(el("h2",null,"Участники"));
-    if(!ids.length){ p.appendChild(el("div","empty","Пока никого. Вступи первым.")); return p; }
-    const rows = ids.map(uid => ({ uid, st: statsFor(cid, uid) }));
-    rows.sort((a,b) => (b.uid===state.me) - (a.uid===state.me) || b.st.streak - a.st.streak || b.st.full - a.st.full);
+    p.appendChild(el("h2",null,"Все участники · "+ranked.length));
     const list = el("div","board");
-    rows.forEach(({uid, st}) => {
-      const b = paint(el("button","brow"+(uid===sel?" sel":"")), cid, uid); b.type="button";
-      b.addEventListener("click", () => { state.selected[cid]=uid; render(); if(window.innerWidth<900){ const pr=$("profile"); if(pr) pr.scrollIntoView({behavior:"smooth"}); } });
+    ranked.forEach(({uid, st}, i) => {
+      const b = paint(el("button","brow"+(shown.includes(uid)?" sel":"")), cid, uid); b.type="button";
+      b.addEventListener("click", () => { state.selected[cid]=uid; render(); const c = document.querySelector(".cols"); if(c) c.scrollIntoView({behavior:"smooth"}); });
       const m = memberOf(cid, uid);
-      const nm = el("div","bname"); nm.append(emojiBox(m.emoji, true), el("span",null, nameOf(cid, uid)+(uid===state.me?" (ты)":"")));
+      const nm = el("div","bname"); nm.append(el("span","muted num",String(i+1)), emojiBox(m.emoji, true), el("span",null, nameOf(cid, uid)+(uid===state.me?" (ты)":"")));
       const stc = el("div","bstats2");
       stc.append(el("span","bs num","🔥 "+st.streak), el("span","bs", st.freeze ? "🛡" : "🛡 "+st.toNext+"д"), el("span", "bs "+(st.doneToday?"ok":"todo"), st.doneToday?"✓ сегодня":"сегодня —"));
       if(st.debt) stc.appendChild(el("span","bs debt", rub(st.debt)));
       b.append(nm, stc); list.appendChild(b);
     });
     p.appendChild(list);
-    p.appendChild(el("div","hint","🔥 серия · 🛡 пропуск есть, или через сколько дней появится · сумма — долг в банк"));
+    p.appendChild(el("div","hint","Сверху колонками — ты и лидеры по серии. Нажми на участника, чтобы открыть его профиль колонкой."));
     return p;
   }
 
@@ -639,7 +653,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const pills = el("div","pills");
     pills.appendChild(el("span","pill "+(st.doneToday?"done":st.todayMin>0?"part":"todo"), st.doneToday?"Сегодня сделано":st.todayMin>0?"Сегодня "+st.todayMin+" мин":"Сегодня ещё нет"));
     pills.appendChild(el("span","pill "+(st.freeze?"done":"todo"), st.freeze ? "🛡 Пропуск есть" : "🛡 Пропуск через "+st.toNext+" "+plural(st.toNext,"день","дня","дней")));
-    pills.appendChild(el("span","pill "+(st.debt?"debtp":"todo"), st.debt ? "Должен в банк: "+rub(st.debt) : "Долгов нет"));
+    pills.appendChild(el("span","pill "+(st.debt?"debtp":"todo"), st.debt ? "Должен в банк: "+rub(st.debt) : "В банк: 0 ₽"));
     tl.appendChild(pills);
     ctop.append(tl, streakNode(cid, uid, st, mine)); col.appendChild(ctop);
     col.appendChild(goalsNode(cid, uid, mine));
@@ -760,28 +774,21 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   // ---------- bank ----------
   function bankNode(cid, ids){
     const p = el("section","panel");
-    p.appendChild(el("h2",null,"Общий банк"));
     const rows = ids.map(uid => ({ uid, st: statsFor(cid, uid) }));
-    const fined = rows.reduce((a,r)=>a+r.st.fined,0), paid = rows.reduce((a,r)=>a+Math.min(r.st.paid, r.st.fined),0);
-    const tiles = el("div","bstats");
-    [["в банке",rub(paid)],["ещё должны",rub(fined-paid)],["всего штрафов",rub(fined)]].forEach(([l,v]) => { const b=el("div","bstat"); b.append(el("b","num",v), el("span",null,l)); tiles.appendChild(b); });
-    p.appendChild(tiles);
-    const manage = canManage(cid);
+    const total = rows.reduce((a,r)=>a+r.st.fined,0);
+    const head = el("div","bankhead"); head.append(el("h2",null,"Общий банк"), el("b","banksum num", rub(total)));
+    p.appendChild(head);
     const list = el("div","banklist");
-    rows.filter(r => r.st.fined>0 || r.st.paid>0).forEach(({uid, st}) => {
+    rows.filter(r => r.st.fined>0).sort((a,b)=>b.st.fined-a.st.fined).forEach(({uid, st}) => {
       const row = paint(el("div","bankrow"), cid, uid);
-      const nm = el("div","bname"); const chip = paint(el("span","who-chip", nameOf(cid, uid)), cid, uid); nm.appendChild(chip);
-      nm.appendChild(el("span","muted", st.breaks.length+" "+plural(st.breaks.length,"срыв","срыва","срывов")+" · внёс "+rub(st.paid)));
-      row.appendChild(nm);
-      row.appendChild(el("b","num"+(st.debt?" debt":""), st.debt ? "должен "+rub(st.debt) : "в расчёте"));
-      if(manage && st.debt){ const b = el("button","btn","Внёс "+rub(st.debt)); b.type="button";
-        b.addEventListener("click", async () => { b.disabled=true; await saveChallenge(cid, { paid: { [uid]: st.paid + st.debt } }); }); row.appendChild(b); }
+      const nm = el("div","bname"); nm.append(paint(el("span","who-chip", nameOf(cid, uid)), cid, uid), el("span","muted", st.breaks.length+" "+plural(st.breaks.length,"срыв","срыва","срывов")));
+      row.append(nm, el("b","num", rub(st.fined)));
       const det = el("div","hint"); det.textContent = st.breaks.map(x => human(x.date)+" (серия "+x.lost+")").join(" · "); row.appendChild(det);
       list.appendChild(row);
     });
     if(!list.childNodes.length) list.appendChild(el("div","muted","Срывов пока не было. Так держать."));
     p.appendChild(list);
-    p.appendChild(el("div","hint", "Срыв — пропуск без запаса 🛡 или два пропуска подряд. Каждый срыв серии от 1 дня: "+rub(penaltyOf(cid))+" в общий банк." + (manage ? " Отмечай «Внёс», когда человек перевёл деньги." : "")));
+    p.appendChild(el("div","hint","Срыв — пропуск без запаса 🛡 или два пропуска подряд. За каждый срыв "+rub(penaltyOf(cid))+" в общий банк."));
     return p;
   }
 
