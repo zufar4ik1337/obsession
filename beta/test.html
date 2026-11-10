@@ -456,7 +456,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   // ---------- rendering (with focus preservation) ----------
   const drafts = {};
   let openEmoji = false, emojiPack = 0, renaming = false;
-  const openComments = new Set(), openPast = new Set();
+  const openComments = new Set(), openPast = new Set(), showAllFeed = new Set();
   let cardIdx = -1, cardShown = false, cardFor = null;
 
   function render(){
@@ -668,7 +668,11 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(mine) col.appendChild(reportForm(cid));
     const days = daysOf(cid, uid); const keys = Object.keys(days).sort().reverse();
     if(!keys.length) col.appendChild(el("div","empty", mine ? "Пока пусто. Запиши первый отчёт выше." : "Отчётов пока нет."));
-    else { const f = el("div","feed"); keys.forEach(k => f.appendChild(entryNode(cid, uid, k, days[k]))); col.appendChild(f); }
+    else {
+      const f = el("div","feed"); const key2 = cid+"/"+uid; const all = showAllFeed.has(key2);
+      (all ? keys : keys.slice(0,5)).forEach(k => f.appendChild(entryNode(cid, uid, k, days[k]))); col.appendChild(f);
+      if(keys.length>5){ const b = el("button","btn", all ? "Свернуть" : "Показать все отчёты ("+keys.length+")"); b.type="button"; b.addEventListener("click", () => { all ? showAllFeed.delete(key2) : showAllFeed.add(key2); render(); }); col.appendChild(b); }
+    }
     return col;
   }
 
