@@ -287,6 +287,7 @@ textarea{resize:vertical;min-height:84px}
 .col .chead{min-width:0;flex:1 1 150px}
 .col .cname,.col .cname-btn{overflow-wrap:break-word;word-break:normal;hyphens:auto}
 .cols.n3 .col .cname,.cols.n3 .col .cname-btn,.cols.n4 .col .cname,.cols.n4 .col .cname-btn{font-size:18px}
+.bs.rep{font-weight:700;letter-spacing:.01em}
 
 </style>
 </head>
@@ -630,7 +631,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const m = memberOf(cid, uid);
       const nm = el("div","bname"); nm.append(el("span","muted num",String(i+1)), emojiBox(m.emoji, true), el("span",null, nameOf(cid, uid)+(uid===state.me?" (ты)":"")));
       const stc = el("div","bstats2");
-      stc.append(el("span","bs num","🔥 "+st.streak), el("span","bs", st.freeze ? "🛡" : "🛡 "+st.toNext+"д"), el("span", "bs "+(st.doneToday?"ok":"todo"), st.doneToday?"✓ сегодня":"сегодня —"));
+      stc.append(el("span","bs num rep","+ реп "+st.streak), el("span","bs", st.freeze ? "🛡" : "🛡 "+st.toNext+"д"), el("span", "bs "+(st.doneToday?"ok":"todo"), st.doneToday?"✓ сегодня":"сегодня —"));
       if(st.debt) stc.appendChild(el("span","bs debt", rub(st.debt)));
       b.append(nm, stc); list.appendChild(b);
     });
