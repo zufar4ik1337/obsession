@@ -1,5 +1,5 @@
 // Минимальный service worker: делает сайт устанавливаемым и кэширует файлы эмодзи и иконки.
-const CACHE = "obsession-v9";
+const CACHE = "obsession-v10";
 self.addEventListener("install", e => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())
