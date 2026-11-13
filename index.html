@@ -300,6 +300,22 @@ textarea{resize:vertical;min-height:84px}
 .btn.more{background:#ebebeb;color:#0f0f0f;border-color:#ebebeb}
 .btn.more:hover{background:#ffffff;border-color:#ffffff}
 .btn.addday{justify-self:start;border:1px dashed var(--line)}
+.trainer{display:grid;gap:12px}
+.review-banner{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;border:none;border-radius:12px;padding:12px 16px;background:#ebebeb;color:#0f0f0f;cursor:pointer;font:inherit;text-align:left}
+.review-banner:hover{background:#fff}
+.segs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.tr-form{display:grid;gap:10px;max-width:420px;width:100%;justify-self:center}
+.tr-form input{text-align:center;font-size:18px;padding:11px 12px}
+.tr-res{display:grid;gap:4px;justify-items:center}
+.tr-res b{font-family:var(--display);font-size:18px}
+.tr-res.ok b{color:var(--ink)}
+.tr-res.bad b{text-decoration:underline;text-decoration-thickness:2px}
+.tr-target{font-size:20px;font-weight:600}
+.myprog{border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.myprog summary{cursor:pointer}
+.prog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px}
+.prog-col{display:grid;gap:4px;align-content:start;font-size:14px}
+.prog-w{overflow-wrap:anywhere}
 
 </style>
 </head>
@@ -844,30 +860,126 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     return out.sort((a,b)=>a.at.localeCompare(b.at));
   }
   const timeAgo = (iso) => { const d=new Date(iso); if(isNaN(d)) return ""; const k=keyOf(d); return (k===today()?"сегодня":human(k))+", "+pad(d.getHours())+":"+pad(d.getMinutes()); };
+  // ---------- тренажёр слов: личный прогресс users/{uid}/progress/{cid} ----------
+  const progress = {};            // cid -> { words: { wk: {s, ok, bad, wrong, last} } }
+  const progSubs = {};
+  function watchProgress(cid){
+    if(!fs || !state.me || progSubs[cid+"|"+state.me]) return;
+    progSubs[cid+"|"+state.me] = fs.doc("users/"+state.me+"/progress/"+cid).onSnapshot(d => { progress[cid] = (d.exists && d.data()) || {}; render(); }, () => {});
+  }
+  const progOf = (cid, wk) => ((progress[cid]||{}).words||{})[wk] || {};
+  const LEARN_AT = 3, CLEAR_AT = 2;
+  const isLearned = (p) => (p.s||0) >= LEARN_AT && !p.wrong;
+  const normEn = (x) => String(x||"").toLowerCase().replace(/[’`]/g,"'").replace(/[.!?"«»()]/g,"").replace(/^(to|a|an|the)\s+/,"").replace(/\s+/g," ").trim();
+  const normRu = (x) => String(x||"").toLowerCase().replace(/ё/g,"е").replace(/[.!?"«»()]/g,"").replace(/\s+/g," ").trim();
+  const variants = (x, norm) => String(x||"").split(/[,;\/]| или /).map(norm).filter(Boolean);
+  function isCorrect(answer, target, dir){
+    const norm = dir==="ru2en" ? normEn : normRu; const a = norm(answer); if(!a) return false;
+    return variants(target, norm).some(v => v===a);
+  }
+  const tr = { mode:"all", dir:"ru2en", cur:null, phase:"ask", answer:"", ok:null, forCid:null };
+  async function recordAnswer(cid, wk, ok){
+    if(!state.me) return;
+    const p = progOf(cid, wk); tr.prev = Object.assign({}, p); const s = ok ? (p.s||0)+1 : 0;
+    let wrong = !!p.wrong;
+    if(!ok) wrong = true; else if(wrong && s >= CLEAR_AT) wrong = false;
+    const rec = { s, ok:(p.ok||0)+(ok?1:0), bad:(p.bad||0)+(ok?0:1), wrong, last: today() };
+    progress[cid] = progress[cid] || {}; progress[cid].words = Object.assign({}, progress[cid].words, { [wk]: rec });
+    try{ await fs.doc("users/"+state.me+"/progress/"+cid).set({ words: { [wk]: rec } }, {merge:true}); }catch(e){ setStatus(explain(e), true); }
+  }
+  function trainerNode(cid, words){
+    if(tr.forCid!==cid){ Object.assign(tr, { forCid:cid, cur:null, phase:"ask", answer:"", ok:null }); }
+    const me = isMember(cid); if(me) watchProgress(cid);
+    const usable = words.filter(w => w.ru && w.en);
+    const mine = me ? usable.filter(w => w.uid===state.me) : [];
+    const errors = me ? usable.filter(w => progOf(cid, wordKey(w.en)).wrong) : [];
+    if(!me && tr.mode!=="all") tr.mode = "all";
+    if(tr.mode==="errors" && !errors.length && tr.phase==="ask") tr.mode = "all";
+    const deck = tr.mode==="mine" ? mine : tr.mode==="errors" ? errors : usable;
+    const box = el("div","trainer");
+    if(me && errors.length && tr.mode!=="errors"){
+      const bn = el("button","review-banner"); bn.type="button";
+      bn.append(el("b",null,"Разбор ошибок: "+errors.length+" "+plural(errors.length,"слово","слова","слов")), el("span",null,"Повторить →"));
+      bn.addEventListener("click", () => { tr.mode="errors"; tr.cur=null; tr.phase="ask"; render(); }); box.appendChild(bn);
+    }
+    const card = el("div","card");
+    const segs = el("div","segs");
+    const seg = el("div","seg"); seg.setAttribute("role","tablist");
+    [["all","Общие · "+usable.length],["mine","Мои · "+mine.length],["errors","Ошибки · "+errors.length]].forEach(([m,label]) => {
+      if(m!=="all" && !me) return;
+      const b = el("button",null,label); b.type="button"; b.setAttribute("role","tab"); b.setAttribute("aria-selected", String(tr.mode===m));
+      b.addEventListener("click", () => { if(tr.mode!==m){ tr.mode=m; tr.cur=null; tr.phase="ask"; render(); } }); seg.appendChild(b); });
+    const seg2 = el("div","seg");
+    [["ru2en","RU → EN"],["en2ru","EN → RU"]].forEach(([d,label]) => { const b = el("button",null,label); b.type="button"; b.setAttribute("aria-selected", String(tr.dir===d));
+      b.addEventListener("click", () => { if(tr.dir!==d){ tr.dir=d; tr.phase="ask"; tr.answer=""; render(); } }); seg2.appendChild(b); });
+    segs.append(seg, seg2); card.appendChild(segs);
+    if(!deck.length){
+      card.appendChild(el("div","muted", tr.mode==="mine" ? "Твоих слов с переводом пока нет. Добавляй их в отчётах в поле «Новые слова»." : tr.mode==="errors" ? "Ошибок нет — всё разобрано." : "Слов с переводом пока нет."));
+      box.appendChild(card); if(me) box.appendChild(myProgressNode(cid, usable)); return box;
+    }
+    let w = deck.find(x => wordKey(x.en)===tr.cur);
+    if(!w){
+      const pool = deck.filter(x => !isLearned(progOf(cid, wordKey(x.en))));
+      const src = pool.length ? pool : deck;
+      w = src[Math.floor(Math.random()*src.length)]; tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer="";
+    }
+    const wk = wordKey(w.en);
+    const question = tr.dir==="ru2en" ? w.ru : w.en, target = tr.dir==="ru2en" ? w.en : w.ru;
+    const p = progOf(cid, wk);
+    card.appendChild(el("div","hint", tr.dir==="ru2en" ? "Как это по-английски?" : "Как это по-русски?"));
+    card.appendChild(el("div","en", question));
+    const next = () => { tr.cur=null; tr.phase="ask"; tr.answer=""; render(); setTimeout(()=>{ const i=$("trAns"); if(i) i.focus({preventScroll:true}); },0); };
+    if(tr.phase==="ask"){
+      const f = el("form","tr-form"); const inp = el("input"); inp.type="text"; inp.id="trAns"; inp.autocomplete="off"; inp.setAttribute("autocapitalize","off"); inp.setAttribute("spellcheck","false");
+      inp.placeholder = tr.dir==="ru2en" ? "по-английски" : "по-русски"; inp.value = tr.answer; inp.setAttribute("aria-label","Твой ответ");
+      inp.addEventListener("input", () => tr.answer = inp.value);
+      const chk = el("button","btn primary","Проверить"); chk.type="submit";
+      const idk = el("button","btn","Не знаю"); idk.type="button";
+      f.addEventListener("submit", async ev => { ev.preventDefault(); if(!inp.value.trim()){ inp.focus(); return; }
+        tr.answer = inp.value; tr.ok = isCorrect(inp.value, target, tr.dir); tr.phase="result"; render(); await recordAnswer(cid, wk, tr.ok); setTimeout(()=>{ const n=$("trNext"); if(n) n.focus({preventScroll:true}); },0); });
+      idk.addEventListener("click", async () => { tr.answer=""; tr.ok=false; tr.phase="result"; render(); await recordAnswer(cid, wk, false); setTimeout(()=>{ const n=$("trNext"); if(n) n.focus({preventScroll:true}); },0); });
+      const row = el("div","btns"); row.append(chk, idk); f.append(inp, row); card.appendChild(f);
+    } else {
+      const res = el("div","tr-res "+(tr.ok?"ok":"bad"));
+      res.appendChild(el("b",null, tr.ok ? "Верно!" : (tr.answer ? "Неверно" : "Запомни")));
+      if(!tr.ok && tr.answer) res.appendChild(el("div","muted","Твой ответ: "+tr.answer));
+      res.appendChild(el("div","tr-target", target));
+      card.appendChild(res);
+      const row = el("div","btns"); const nx = el("button","btn primary","Дальше"); nx.type="button"; nx.id="trNext"; nx.addEventListener("click", next); row.appendChild(nx);
+      if(!tr.ok && tr.answer && me){ const ov = el("button","btn ghost","Я был прав"); ov.type="button";
+        ov.addEventListener("click", async () => { // отменяем ошибку: считаем от состояния до ответа, как будто ответ верный
+          const prev = tr.prev || {}; const s = (prev.s||0)+1; let wrong = !!prev.wrong; if(wrong && s >= CLEAR_AT) wrong = false;
+          const rec = { s, ok:(prev.ok||0)+1, bad:(prev.bad||0), wrong, last: today() };
+          progress[cid] = progress[cid] || {}; progress[cid].words = Object.assign({}, progress[cid].words, { [wk]: rec }); tr.ok = true; render();
+          try{ await fs.doc("users/"+state.me+"/progress/"+cid).set({ words:{ [wk]: rec } }, {merge:true}); }catch(e){ setStatus(explain(e), true); } });
+        row.appendChild(ov); }
+      card.appendChild(row);
+    }
+    if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "в разборе ошибок" : (p.s ? "верно подряд: "+p.s+" из "+LEARN_AT : "новое слово"); card.appendChild(el("div","hint", st)); }
+    box.appendChild(card);
+    if(me) box.appendChild(myProgressNode(cid, usable));
+    return box;
+  }
+  function myProgressNode(cid, usable){
+    const learned = [], learning = [], errs = [];
+    usable.forEach(w => { const p = progOf(cid, wordKey(w.en)); if(p.wrong) errs.push(w); else if(isLearned(p)) learned.push(w); else learning.push(w); });
+    const d = el("details","myprog"); if(openPast.has("prog/"+cid)) d.open = true;
+    d.addEventListener("toggle", () => { d.open ? openPast.add("prog/"+cid) : openPast.delete("prog/"+cid); });
+    const sm = el("summary"); sm.append(el("b",null,"Мой прогресс"), el("span","muted"," · видно только тебе · запомнил "+learned.length+" · учу "+learning.length+" · ошибки "+errs.length)); d.appendChild(sm);
+    const grid = el("div","prog-grid");
+    [["Запомнил",learned],["Ещё учу",learning],["Ошибки",errs]].forEach(([t,list]) => {
+      const c = el("div","prog-col"); c.appendChild(el("h3",null,t+" · "+list.length));
+      if(!list.length) c.appendChild(el("div","muted","—"));
+      list.slice(0,200).forEach(w => { const r = el("div","prog-w"); r.append(el("b",null,w.en), el("span","muted"," — "+w.ru)); c.appendChild(r); });
+      grid.appendChild(c); });
+    d.appendChild(grid); return d;
+  }
+
   function dictNode(cid){
     const v = el("section","panel"); const words = allWords(cid);
     v.appendChild(el("h2",null,"Общий словарь"));
     if(!words.length){ v.appendChild(el("div","empty","Слов пока нет. Добавляй их в поле «Новые слова» в отчёте.")); return v; }
-    if(cardFor!==cid){ cardFor=cid; cardIdx=-1; }
-    const mineWords = isMember(cid) ? words.filter(w => w.uid===state.me) : [];
-    if(cardMode==="mine" && !isMember(cid)) cardMode = "all";
-    const deck = cardMode==="mine" ? mineWords : words;
-    const card = el("div","card"); const en = el("div","en"), ru = el("div","ru muted"); const btns = el("div","btns");
-    const seg = el("div","seg"); seg.setAttribute("role","tablist");
-    [["all","Общие · "+words.length],["mine","Мои · "+mineWords.length]].forEach(([m,label]) => {
-      if(m==="mine" && !isMember(cid)) return;
-      const b = el("button",null,label); b.type="button"; b.setAttribute("role","tab"); b.setAttribute("aria-selected", String(cardMode===m));
-      b.addEventListener("click", () => { if(cardMode!==m){ cardMode=m; cardIdx=-1; render(); } }); seg.appendChild(b); });
-    card.appendChild(seg);
-    if(!deck.length){ card.appendChild(el("div","muted","Твоих слов пока нет. Добавляй их в отчётах в поле «Новые слова».")); v.appendChild(card); }
-    else {
-    const show = el("button","btn","Показать перевод"); show.type="button"; const next = el("button","btn primary","Следующее слово"); next.type="button";
-    const draw = () => { const w = deck[cardIdx]; en.textContent=w.en; ru.textContent = cardShown ? (w.ru||"перевода нет") : ""; show.disabled=cardShown; };
-    const pick = () => { let n=Math.floor(Math.random()*deck.length); if(deck.length>1 && n===cardIdx) n=(n+1)%deck.length; cardIdx=n; cardShown=false; draw(); };
-    show.addEventListener("click", () => { cardShown=true; draw(); }); next.addEventListener("click", pick);
-    btns.append(show,next); card.append(en, ru, btns); v.appendChild(card);
-    if(cardIdx<0||cardIdx>=deck.length) pick(); else draw();
-    }
+    v.appendChild(trainerNode(cid, words));
     const wrap = el("div","tablewrap"); const tbl = el("table","dict"); const hr = el("tr");
     ["Слово","Перевод","Кто добавил","Когда",""].forEach(h=>hr.appendChild(el("th",null,h))); const th=el("thead"); th.appendChild(hr); tbl.appendChild(th);
     const tb = el("tbody");
