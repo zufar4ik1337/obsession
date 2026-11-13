@@ -14,7 +14,7 @@
 <title>Obsession</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -300,6 +300,14 @@ textarea{resize:vertical;min-height:84px}
 .btn.more{background:#ebebeb;color:#0f0f0f;border-color:#ebebeb}
 .btn.more:hover{background:#ffffff;border-color:#ffffff}
 .btn.addday{justify-self:start;border:1px dashed var(--line)}
+/* заголовок челленджа: хром в перспективе (вариант B) */
+:root{--chrome:linear-gradient(180deg,#5a5a5a 0%,#2a2a2a 38%,#0f0f0f 50%,#3d3d3d 62%,#6e6e6e 100%);--ext1:#8a8a8a;--ext2:#a3a3a3;--ext3:#b5b5b5;--ext4:#c4c4c4;--extb:#9a9a9a;--extsh:rgba(0,0,0,.25)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--chrome:linear-gradient(180deg,#ffffff 0%,#d9d9d9 38%,#7a7a7a 50%,#cfcfcf 62%,#ffffff 100%);--ext1:#6a6a6a;--ext2:#4a4a4a;--ext3:#2a2a2a;--ext4:#151515;--extb:#7a7a7a;--extsh:rgba(0,0,0,.7)}}
+:root[data-theme="dark"]{--chrome:linear-gradient(180deg,#ffffff 0%,#d9d9d9 38%,#7a7a7a 50%,#cfcfcf 62%,#ffffff 100%);--ext1:#6a6a6a;--ext2:#4a4a4a;--ext3:#2a2a2a;--ext4:#151515;--extb:#7a7a7a;--extsh:rgba(0,0,0,.7)}
+.t3d-wrap{perspective:600px;padding:6px 0 14px}
+.ctitle.t3d{position:relative;font-family:var(--display);font-weight:900;font-size:clamp(32px,6.5vw,64px);line-height:1.02;letter-spacing:-.025em;transform:rotateX(18deg) rotateZ(-2deg);transform-origin:50% 100%}
+.t3d .t3d-b{display:block;color:var(--extb);text-shadow:0 1px 0 var(--ext1),0 2px 0 var(--ext1),0 3px 0 var(--ext2),0 4px 0 var(--ext2),0 5px 0 var(--ext3),0 6px 0 var(--ext3),0 7px 0 var(--ext4),0 16px 20px var(--extsh)}
+.t3d .t3d-f{position:absolute;inset:0;display:block;background:var(--chrome);-webkit-background-clip:text;background-clip:text;color:transparent}
 
 </style>
 </head>
@@ -585,7 +593,9 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const head = el("header","top");
     const tb = el("div","title-block");
     if(c.topic) tb.appendChild(el("span","pill-tag", c.topic));
-    tb.appendChild(el("h1","ctitle", c.title || "Без названия"));
+    { const tt = c.title || "Без названия"; const wrap = el("div","t3d-wrap"); const h = el("h1","ctitle t3d");
+      const b = el("span","t3d-b", tt); const f = el("span","t3d-f", tt); f.setAttribute("aria-hidden","true");
+      h.append(b, f); wrap.appendChild(h); tb.appendChild(wrap); }
     if(c.description) tb.appendChild(el("p","cdesc", c.description));
     tb.appendChild(authNode());
     head.appendChild(tb);
