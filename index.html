@@ -296,6 +296,7 @@ textarea{resize:vertical;min-height:84px}
 .seg{display:inline-flex;justify-self:center;gap:2px;padding:3px;border-radius:99px;background:color-mix(in srgb, var(--ink) 10%, transparent)}
 .seg button{border:none;background:transparent;padding:6px 14px;border-radius:99px;cursor:pointer;font-weight:600;font-size:13px;color:var(--muted)}
 .seg button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.btn.more{justify-self:start;font-size:14px;padding:7px 14px}
 
 </style>
 </head>
@@ -462,7 +463,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   // ---------- rendering (with focus preservation) ----------
   const drafts = {};
   let openEmoji = false, emojiPack = 0, renaming = false;
-  const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set();
+  const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set(), showAllDict = new Set();
   let cardIdx = -1, cardShown = false, cardFor = null, cardMode = "all";
 
   function render(){
@@ -678,8 +679,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!keys.length) col.appendChild(el("div","empty", mine ? "Пока пусто. Запиши первый отчёт выше." : "Отчётов пока нет."));
     else {
       const f = el("div","feed"); const key2 = cid+"/"+uid; const all = showAllFeed.has(key2);
-      (all ? keys : keys.slice(0,5)).forEach(k => f.appendChild(entryNode(cid, uid, k, days[k]))); col.appendChild(f);
-      if(keys.length>5){ const b = el("button","btn", all ? "Свернуть" : "Показать все отчёты ("+keys.length+")"); b.type="button"; b.addEventListener("click", () => { all ? showAllFeed.delete(key2) : showAllFeed.add(key2); render(); }); col.appendChild(b); }
+      (all ? keys : keys.slice(0,1)).forEach(k => f.appendChild(entryNode(cid, uid, k, days[k]))); col.appendChild(f);
+      if(keys.length>1){ const b = el("button","btn more", all ? "Свернуть отчёты" : "Показать предыдущие отчёты ("+(keys.length-1)+")"); b.type="button"; b.addEventListener("click", () => { all ? showAllFeed.delete(key2) : showAllFeed.add(key2); render(); }); col.appendChild(b); }
     }
     return col;
   }
@@ -823,7 +824,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const out=[]; const seen=new Set();
     memberIds(cid).forEach(uid => { const d=daysOf(cid, uid); Object.keys(d).sort().reverse().forEach(k => {
       (Array.isArray(d[k].words)?d[k].words:[]).forEach(w => { if(!w||!w.en) return; const key=String(w.en).toLowerCase().trim(); if(seen.has(key)) return; seen.add(key); out.push({en:String(w.en),ru:String(w.ru||""),uid,k}); }); }); });
-    return out;
+    return out.sort((a,b) => b.k.localeCompare(a.k));
   }
   function commentsFor(cid, wk){
     const out=[]; const ms = state.members[cid]||{};
@@ -859,7 +860,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const wrap = el("div","tablewrap"); const tbl = el("table","dict"); const hr = el("tr");
     ["Слово","Перевод","Кто добавил","Когда",""].forEach(h=>hr.appendChild(el("th",null,h))); const th=el("thead"); th.appendChild(hr); tbl.appendChild(th);
     const tb = el("tbody");
-    words.forEach(w => {
+    const dictAll = showAllDict.has(cid);
+    (dictAll ? words : words.slice(0,5)).forEach(w => {
       const tr = paint(el("tr"), cid, w.uid); const who = el("td"); who.appendChild(paint(el("span","who-chip",nameOf(cid, w.uid)), cid, w.uid));
       const wk = wordKey(w.en); const list = commentsFor(cid, wk); const open = openComments.has(cid+"|"+wk);
       const cb = el("button","cbtn"+(list.length?" has":""), list.length ? "💬 "+list.length : "💬"); cb.type="button"; cb.setAttribute("aria-expanded",String(open)); cb.setAttribute("aria-label","Комментарии к слову "+w.en);
@@ -885,6 +887,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       }
     });
     tbl.appendChild(tb); wrap.appendChild(tbl); v.appendChild(wrap);
+    if(words.length>5){ const b = el("button","btn more", dictAll ? "Свернуть словарь" : "Развернуть словарь полностью ("+words.length+")"); b.type="button";
+      b.addEventListener("click", () => { dictAll ? showAllDict.delete(cid) : showAllDict.add(cid); render(); }); v.appendChild(b); }
     v.appendChild(shareNode(cid, words));
     return v;
   }
