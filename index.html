@@ -299,6 +299,7 @@ textarea{resize:vertical;min-height:84px}
 .btn.more{justify-self:start;font-size:14px;padding:7px 14px}
 .btn.more{background:#ebebeb;color:#0f0f0f;border-color:#ebebeb}
 .btn.more:hover{background:#ffffff;border-color:#ffffff}
+.btn.addday{justify-self:start;border:1px dashed var(--line)}
 
 </style>
 </head>
@@ -465,7 +466,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   // ---------- rendering (with focus preservation) ----------
   const drafts = {};
   let openEmoji = false, emojiPack = 0, renaming = false;
-  const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set(), showAllDict = new Set();
+  const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set(), showAllDict = new Set(), editingReport = new Set();
   let cardIdx = -1, cardShown = false, cardFor = null, cardMode = "all";
 
   function render(){
@@ -676,7 +677,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const stats = el("div","stats");
     [["лучшая серия",st.best],["дней",st.full],["минут",st.total]].concat(ch(cid).dictionary?[["слов",st.words]]:[]).forEach(([l,v]) => { const d=el("div"); d.appendChild(el("b","num",String(v))); d.appendChild(document.createTextNode(l)); stats.appendChild(d); });
     col.appendChild(stats);
-    if(mine) col.appendChild(reportForm(cid));
+    if(mine){
+      const hasToday = !!daysOf(cid, uid)[today()];
+      if(!hasToday || editingReport.has(cid)) col.appendChild(reportForm(cid));
+      else { const add = el("button","btn ghost addday","+ Отчёт за другой день"); add.type="button";
+        add.addEventListener("click", () => { editingReport.add(cid); drafts.fDate = addDays(today(),-1); ["fMin","fText","fWords"].forEach(x=>delete drafts[x]); render(); const f=$("fText"); if(f) f.focus({preventScroll:true}); });
+        col.appendChild(add); }
+    }
     const days = daysOf(cid, uid); const keys = Object.keys(days).sort().reverse();
     if(!keys.length) col.appendChild(el("div","empty", mine ? "Пока пусто. Запиши первый отчёт выше." : "Отчётов пока нет."));
     else {
@@ -757,16 +764,18 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const wd = el("textarea"); wd.id=wId; wd.maxLength=2000; wd.placeholder="to come up with — придумать"; wd.value = drafts[wId] ?? (existing && Array.isArray(existing.words) ? existing.words.map(w => w.ru ? w.en+" — "+w.ru : w.en).join("\n") : "");
     [date,mn,tx,wd].forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; }));
     date.addEventListener("change", () => { drafts[dId]=date.value; delete drafts[mId]; delete drafts[tId]; delete drafts[wId]; render(); });
-    const title = date.value===today() ? (existing?"Отчёт за сегодня (правка)":"Отчёт за сегодня") : "Отчёт за "+human(date.value)+(existing?" (правка)":"");
+    const title = existing ? "Правка отчёта за "+(date.value===today()?"сегодня":human(date.value)) : (date.value===today() ? "Отчёт за сегодня" : "Отчёт за "+human(date.value));
     f.appendChild(el("h3",null,title));
     const r = el("div","row2"); const l1 = el("label",null,"Дата"); l1.htmlFor=dId; l1.appendChild(date); const l2 = el("label",null,"Минут (нужно "+g+")"); l2.htmlFor=mId; l2.appendChild(mn); r.append(l1,l2); f.appendChild(r);
     const l3 = el("label",null,"Что сделал"); l3.htmlFor=tId; l3.appendChild(tx); f.appendChild(l3);
     if(ch(cid).dictionary){ const l4 = el("label",null,"Новые слова "); l4.htmlFor=wId; l4.appendChild(el("span","hint","по одному на строку: word — перевод")); l4.appendChild(wd); f.appendChild(l4); }
     const btns = el("div","btns left"); const save = el("button","btn primary","Сохранить отчёт"); save.type="submit"; btns.appendChild(save);
+    const endEdit = () => { editingReport.delete(cid); [dId,mId,tId,wId].forEach(x=>delete drafts[x]); };
+    if(editingReport.has(cid)){ const cn = el("button","btn ghost","Отмена"); cn.type="button"; cn.addEventListener("click", () => { endEdit(); render(); }); btns.appendChild(cn); }
     let armed=false;
     if(existing){ const del = el("button","btn ghost","Удалить этот день"); del.type="button"; btns.appendChild(del);
       del.addEventListener("click", async () => { if(!armed){ armed=true; del.textContent="Точно? Нажми ещё раз"; setTimeout(()=>{ armed=false; del.textContent="Удалить этот день"; },4000); return; }
-        await saveMember(cid, { days: { [date.value]: FV.delete() } }); [mId,tId,wId].forEach(k=>delete drafts[k]); }); }
+        if(await saveMember(cid, { days: { [date.value]: FV.delete() } })){ endEdit(); render(); } }); }
     f.appendChild(btns);
     const msg = el("div","msg hidden"); msg.setAttribute("role","status"); f.appendChild(msg);
     f.addEventListener("submit", async (ev) => {
@@ -778,7 +787,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const now = new Date().toISOString(); const prev = daysOf(cid, state.me)[k];
       const rec = { minutes, text:text.slice(0,2000), words: ch(cid).dictionary ? parseWords(wd.value) : [], createdAt:(prev&&prev.createdAt)||now, updatedAt:now };
       save.disabled = true;
-      if(await saveMember(cid, { days: { [k]: rec } })){ [dId,mId,tId,wId].forEach(x=>delete drafts[x]); render(); }
+      if(await saveMember(cid, { days: { [k]: rec } })){ endEdit(); render(); }
       else save.disabled=false;
     });
     return f;
@@ -791,7 +800,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const m = mins(r), g = goalMinOf(cid);
     const e = el("article","entry"+(m<g?" part":""));
     const meta = el("div","meta"); meta.append(el("span","who num", k===today()?"Сегодня":human(k)), el("span","pill "+(m>=g?"done":"part"), m+" мин"));
-    if(uid===state.me){ const ed = el("button","btn ghost","Изменить"); ed.type="button"; ed.addEventListener("click", () => { drafts.fDate=k; ["fMin","fText","fWords"].forEach(x=>delete drafts[x]); render(); const f=$("fText"); if(f){ f.scrollIntoView({behavior:"smooth",block:"center"}); f.focus({preventScroll:true}); } }); meta.appendChild(ed); }
+    if(uid===state.me){ const ed = el("button","btn ghost","Изменить"); ed.type="button"; ed.addEventListener("click", () => { editingReport.add(cid); drafts.fDate=k; ["fMin","fText","fWords"].forEach(x=>delete drafts[x]); render(); const f=$("fText"); if(f){ f.scrollIntoView({behavior:"smooth",block:"center"}); f.focus({preventScroll:true}); } }); meta.appendChild(ed); }
     e.appendChild(meta);
     if(typeof r.text==="string" && r.text) e.appendChild(el("div","text",r.text));
     const ws = Array.isArray(r.words)?r.words:[];
