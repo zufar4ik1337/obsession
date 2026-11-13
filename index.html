@@ -316,6 +316,9 @@ textarea{resize:vertical;min-height:84px}
 .prog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px}
 .prog-col{display:grid;gap:4px;align-content:start;font-size:14px}
 .prog-w{overflow-wrap:anywhere}
+.hintopts{display:grid;gap:8px;max-width:420px;width:100%;justify-self:center}
+.hintopts .opt{width:100%;text-align:center;font-weight:500}
+.hintopts .opt:hover{border-color:var(--ink)}
 
 </style>
 </head>
@@ -878,11 +881,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     return variants(target, norm).some(v => v===a);
   }
   const tr = { mode:"all", dir:"ru2en", cur:null, phase:"ask", answer:"", ok:null, forCid:null };
-  async function recordAnswer(cid, wk, ok){
+  async function recordAnswer(cid, wk, ok, hinted){
     if(!state.me) return;
-    const p = progOf(cid, wk); tr.prev = Object.assign({}, p); const s = ok ? (p.s||0)+1 : 0;
+    const p = progOf(cid, wk); tr.prev = Object.assign({}, p);
+    const s = ok ? (hinted ? (p.s||0) : (p.s||0)+1) : 0;   // верно с подсказкой: серия слова не растёт
     let wrong = !!p.wrong;
-    if(!ok) wrong = true; else if(wrong && s >= CLEAR_AT) wrong = false;
+    if(!ok) wrong = true; else if(!hinted && wrong && s >= CLEAR_AT) wrong = false;
     const rec = { s, ok:(p.ok||0)+(ok?1:0), bad:(p.bad||0)+(ok?0:1), wrong, last: today() };
     progress[cid] = progress[cid] || {}; progress[cid].words = Object.assign({}, progress[cid].words, { [wk]: rec });
     try{ await fs.doc("users/"+state.me+"/progress/"+cid).set({ words: { [wk]: rec } }, {merge:true}); }catch(e){ setStatus(explain(e), true); }
@@ -911,7 +915,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       b.addEventListener("click", () => { if(tr.mode!==m){ tr.mode=m; tr.cur=null; tr.phase="ask"; render(); } }); seg.appendChild(b); });
     const seg2 = el("div","seg");
     [["ru2en","RU → EN"],["en2ru","EN → RU"]].forEach(([d,label]) => { const b = el("button",null,label); b.type="button"; b.setAttribute("aria-selected", String(tr.dir===d));
-      b.addEventListener("click", () => { if(tr.dir!==d){ tr.dir=d; tr.phase="ask"; tr.answer=""; render(); } }); seg2.appendChild(b); });
+      b.addEventListener("click", () => { if(tr.dir!==d){ tr.dir=d; tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false; render(); } }); seg2.appendChild(b); });
     segs.append(seg, seg2); card.appendChild(segs);
     if(!deck.length){
       card.appendChild(el("div","muted", tr.mode==="mine" ? "Твоих слов с переводом пока нет. Добавляй их в отчётах в поле «Новые слова»." : tr.mode==="errors" ? "Ошибок нет — всё разобрано." : "Слов с переводом пока нет."));
@@ -921,14 +925,14 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!w){
       const pool = deck.filter(x => !isLearned(progOf(cid, wordKey(x.en))));
       const src = pool.length ? pool : deck;
-      w = src[Math.floor(Math.random()*src.length)]; tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer="";
+      w = src[Math.floor(Math.random()*src.length)]; tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
     }
     const wk = wordKey(w.en);
     const question = tr.dir==="ru2en" ? w.ru : w.en, target = tr.dir==="ru2en" ? w.en : w.ru;
     const p = progOf(cid, wk);
     card.appendChild(el("div","hint", tr.dir==="ru2en" ? "Как это по-английски?" : "Как это по-русски?"));
     card.appendChild(el("div","en", question));
-    const next = () => { tr.cur=null; tr.phase="ask"; tr.answer=""; render(); setTimeout(()=>{ const i=$("trAns"); if(i) i.focus({preventScroll:true}); },0); };
+    const next = () => { tr.cur=null; tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false; render(); setTimeout(()=>{ const i=$("trAns"); if(i) i.focus({preventScroll:true}); },0); };
     if(tr.phase==="ask"){
       const f = el("form","tr-form"); const inp = el("input"); inp.type="text"; inp.id="trAns"; inp.autocomplete="off"; inp.setAttribute("autocapitalize","off"); inp.setAttribute("spellcheck","false");
       inp.placeholder = tr.dir==="ru2en" ? "по-английски" : "по-русски"; inp.value = tr.answer; inp.setAttribute("aria-label","Твой ответ");
@@ -938,15 +942,31 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       f.addEventListener("submit", async ev => { ev.preventDefault(); if(!inp.value.trim()){ inp.focus(); return; }
         tr.answer = inp.value; tr.ok = isCorrect(inp.value, target, tr.dir); tr.phase="result"; render(); await recordAnswer(cid, wk, tr.ok); setTimeout(()=>{ const n=$("trNext"); if(n) n.focus({preventScroll:true}); },0); });
       idk.addEventListener("click", async () => { tr.answer=""; tr.ok=false; tr.phase="result"; render(); await recordAnswer(cid, wk, false); setTimeout(()=>{ const n=$("trNext"); if(n) n.focus({preventScroll:true}); },0); });
-      const row = el("div","btns"); row.append(chk, idk); f.append(inp, row); card.appendChild(f);
+      const hb = el("button","btn hintbtn", tr.hint ? "Скрыть подсказку" : "💡 Подсказка"); hb.type="button"; hb.setAttribute("aria-expanded", String(!!tr.hint));
+      hb.addEventListener("click", () => {
+        if(!tr.opts){ // правильный вариант + два случайных из словаря
+          const others = [...new Set(usable.map(x => tr.dir==="ru2en" ? x.en : x.ru).filter(t => t && normRu(t)!==normRu(target)))];
+          for(let i=others.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [others[i],others[j]]=[others[j],others[i]]; }
+          const opts = [target].concat(others.slice(0,2));
+          for(let i=opts.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [opts[i],opts[j]]=[opts[j],opts[i]]; }
+          tr.opts = opts; }
+        tr.hint = !tr.hint; render(); });
+      const row = el("div","btns"); row.append(chk, idk, hb); f.append(inp, row); card.appendChild(f);
+      if(tr.hint && tr.opts){
+        const ho = el("div","hintopts"); ho.appendChild(el("div","hint","Выбери вариант — с подсказкой слово не продвигается к «запомнил»"));
+        tr.opts.forEach(o => { const b = el("button","btn opt", o); b.type="button";
+          b.addEventListener("click", async () => { tr.answer = o; tr.ok = isCorrect(o, target, tr.dir) || o===target; tr.hinted = true; tr.phase="result"; render(); await recordAnswer(cid, wk, tr.ok, true); setTimeout(()=>{ const n=$("trNext"); if(n) n.focus({preventScroll:true}); },0); });
+          ho.appendChild(b); });
+        card.appendChild(ho);
+      }
     } else {
       const res = el("div","tr-res "+(tr.ok?"ok":"bad"));
-      res.appendChild(el("b",null, tr.ok ? "Верно!" : (tr.answer ? "Неверно" : "Запомни")));
+      res.appendChild(el("b",null, tr.ok ? (tr.hinted ? "Верно (с подсказкой)" : "Верно!") : (tr.answer ? "Неверно" : "Запомни")));
       if(!tr.ok && tr.answer) res.appendChild(el("div","muted","Твой ответ: "+tr.answer));
       res.appendChild(el("div","tr-target", target));
       card.appendChild(res);
       const row = el("div","btns"); const nx = el("button","btn primary","Дальше"); nx.type="button"; nx.id="trNext"; nx.addEventListener("click", next); row.appendChild(nx);
-      if(!tr.ok && tr.answer && me){ const ov = el("button","btn ghost","Я был прав"); ov.type="button";
+      if(!tr.ok && tr.answer && me && !tr.hinted){ const ov = el("button","btn ghost","Я был прав"); ov.type="button";
         ov.addEventListener("click", async () => { // отменяем ошибку: считаем от состояния до ответа, как будто ответ верный
           const prev = tr.prev || {}; const s = (prev.s||0)+1; let wrong = !!prev.wrong; if(wrong && s >= CLEAR_AT) wrong = false;
           const rec = { s, ok:(prev.ok||0)+1, bad:(prev.bad||0), wrong, last: today() };
