@@ -891,6 +891,15 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     progress[cid] = progress[cid] || {}; progress[cid].words = Object.assign({}, progress[cid].words, { [wk]: rec });
     try{ await fs.doc("users/"+state.me+"/progress/"+cid).set({ words: { [wk]: rec } }, {merge:true}); }catch(e){ setStatus(explain(e), true); }
   }
+  const recentMem = {};
+  function recentOf(cid){
+    if(!recentMem[cid]){ let r=[]; try{ r = JSON.parse(localStorage.getItem("recent:"+cid)||"[]"); }catch(e){} recentMem[cid] = Array.isArray(r) ? r : []; }
+    return recentMem[cid];
+  }
+  function pushRecent(cid, wk){
+    const r = recentOf(cid).filter(x => x!==wk); r.push(wk); while(r.length>60) r.shift(); recentMem[cid] = r;
+    try{ localStorage.setItem("recent:"+cid, JSON.stringify(r)); }catch(e){}
+  }
   function trainerNode(cid, words){
     if(tr.forCid!==cid){ Object.assign(tr, { forCid:cid, cur:null, phase:"ask", answer:"", ok:null }); }
     const me = isMember(cid); if(me) watchProgress(cid);
@@ -923,9 +932,14 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     }
     let w = deck.find(x => wordKey(x.en)===tr.cur);
     if(!w){
-      const pool = deck.filter(x => !isLearned(progOf(cid, wordKey(x.en))));
-      const src = pool.length ? pool : deck;
-      w = src[Math.floor(Math.random()*src.length)]; tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
+      // слово не повторяется, пока не пройдёт 30 других (или вся колода, если она меньше)
+      const recent = recentOf(cid); const gap = Math.min(30, Math.max(0, deck.length-1));
+      const block = new Set(recent.slice(-gap));
+      const fresh = deck.filter(x => !block.has(wordKey(x.en)));
+      const unlearned = fresh.filter(x => !isLearned(progOf(cid, wordKey(x.en))));
+      const src = unlearned.length ? unlearned : (fresh.length ? fresh : deck);
+      w = src[Math.floor(Math.random()*src.length)];
+      pushRecent(cid, wordKey(w.en)); tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
     }
     const wk = wordKey(w.en);
     const question = tr.dir==="ru2en" ? w.ru : w.en, target = tr.dir==="ru2en" ? w.en : w.ru;
