@@ -293,6 +293,9 @@ textarea{resize:vertical;min-height:84px}
 .pen:hover{color:var(--ink);background:var(--accent-soft)}
 .goal-edit{display:grid;gap:8px}
 .goal-edit .btns .btn{padding:6px 12px}
+.seg{display:inline-flex;justify-self:center;gap:2px;padding:3px;border-radius:99px;background:color-mix(in srgb, var(--ink) 10%, transparent)}
+.seg button{border:none;background:transparent;padding:6px 14px;border-radius:99px;cursor:pointer;font-weight:600;font-size:13px;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
 
 </style>
 </head>
@@ -460,7 +463,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   const drafts = {};
   let openEmoji = false, emojiPack = 0, renaming = false;
   const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set();
-  let cardIdx = -1, cardShown = false, cardFor = null;
+  let cardIdx = -1, cardShown = false, cardFor = null, cardMode = "all";
 
   function render(){
     const ae = document.activeElement;
@@ -834,13 +837,25 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     v.appendChild(el("h2",null,"Общий словарь"));
     if(!words.length){ v.appendChild(el("div","empty","Слов пока нет. Добавляй их в поле «Новые слова» в отчёте.")); return v; }
     if(cardFor!==cid){ cardFor=cid; cardIdx=-1; }
+    const mineWords = isMember(cid) ? words.filter(w => w.uid===state.me) : [];
+    if(cardMode==="mine" && !isMember(cid)) cardMode = "all";
+    const deck = cardMode==="mine" ? mineWords : words;
     const card = el("div","card"); const en = el("div","en"), ru = el("div","ru muted"); const btns = el("div","btns");
+    const seg = el("div","seg"); seg.setAttribute("role","tablist");
+    [["all","Общие · "+words.length],["mine","Мои · "+mineWords.length]].forEach(([m,label]) => {
+      if(m==="mine" && !isMember(cid)) return;
+      const b = el("button",null,label); b.type="button"; b.setAttribute("role","tab"); b.setAttribute("aria-selected", String(cardMode===m));
+      b.addEventListener("click", () => { if(cardMode!==m){ cardMode=m; cardIdx=-1; render(); } }); seg.appendChild(b); });
+    card.appendChild(seg);
+    if(!deck.length){ card.appendChild(el("div","muted","Твоих слов пока нет. Добавляй их в отчётах в поле «Новые слова».")); v.appendChild(card); }
+    else {
     const show = el("button","btn","Показать перевод"); show.type="button"; const next = el("button","btn primary","Следующее слово"); next.type="button";
-    const draw = () => { const w = words[cardIdx]; en.textContent=w.en; ru.textContent = cardShown ? (w.ru||"перевода нет") : ""; show.disabled=cardShown; };
-    const pick = () => { let n=Math.floor(Math.random()*words.length); if(words.length>1 && n===cardIdx) n=(n+1)%words.length; cardIdx=n; cardShown=false; draw(); };
+    const draw = () => { const w = deck[cardIdx]; en.textContent=w.en; ru.textContent = cardShown ? (w.ru||"перевода нет") : ""; show.disabled=cardShown; };
+    const pick = () => { let n=Math.floor(Math.random()*deck.length); if(deck.length>1 && n===cardIdx) n=(n+1)%deck.length; cardIdx=n; cardShown=false; draw(); };
     show.addEventListener("click", () => { cardShown=true; draw(); }); next.addEventListener("click", pick);
-    btns.append(show,next); card.append(el("div","hint","Карточки · "+words.length+" "+plural(words.length,"слово","слова","слов")), en, ru, btns); v.appendChild(card);
-    if(cardIdx<0||cardIdx>=words.length) pick(); else draw();
+    btns.append(show,next); card.append(en, ru, btns); v.appendChild(card);
+    if(cardIdx<0||cardIdx>=deck.length) pick(); else draw();
+    }
     const wrap = el("div","tablewrap"); const tbl = el("table","dict"); const hr = el("tr");
     ["Слово","Перевод","Кто добавил","Когда",""].forEach(h=>hr.appendChild(el("th",null,h))); const th=el("thead"); th.appendChild(hr); tbl.appendChild(th);
     const tb = el("tbody");
