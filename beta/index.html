@@ -1169,9 +1169,10 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const out=[], seen=new Set();
     (Array.isArray(arr)?arr:[]).forEach(f => {
       if(!f || typeof f!=="object") return;
-      const id = String(f.id||"").replace(/[^A-Za-z0-9_-]/g,"").slice(0,20); const label = str(f.label,60);
+      const id = String(f.id||"").replace(/[^A-Za-z0-9_-]/g,"").slice(0,20);
       let type = FTYPES.some(t => t[0]===f.type) ? f.type : "short";
       if(id==="words") type="list"; if(id==="text" && type!=="short" && type!=="long") type="long";
+      const label = str(f.label,60) || (FTYPES.find(t => t[0]===type)||["","Поле"])[1];
       if(!id || !label || seen.has(id)) return; seen.add(id); out.push({ id, label, type, req: !!f.req });
     });
     return out.slice(0,12);
@@ -1204,10 +1205,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const box = el("div","fedit"); const list = () => fieldDrafts[key];
     function draw(){
       box.replaceChildren();
-      const top = el("div","frow2 fixed"); top.append(el("b",null,"Минуты"), el("span","hint","всегда есть, обязательное число")); box.appendChild(top);
+      const top = el("div","frow2 fixed"); top.append(el("b",null,"Минуты"), el("span","hint","поле есть всегда: участник пишет, сколько минут занимался. Сколько минут нужно в день, задаётся выше — «Минут в день»")); box.appendChild(top);
       list().forEach((f, idx) => {
         const row = el("div","frow2");
-        const lab = el("input"); lab.type="text"; lab.maxLength=60; lab.value=f.label; lab.setAttribute("aria-label","Название поля"); lab.addEventListener("input", () => { f.label = lab.value; });
+        if(f._def===undefined){ f._def = f.label; f._edited = false; }   // текущее название показываем серой подсказкой
+        const lab = el("input"); lab.type="text"; lab.maxLength=60; lab.placeholder = f._def; lab.value = f._edited ? f.label : ""; lab.setAttribute("aria-label","Название поля: "+f._def);
+        lab.addEventListener("input", () => { f._edited = lab.value.trim()!==""; f.label = f._edited ? lab.value : f._def; });
         row.appendChild(lab);
         if(f.id==="words"){ row.appendChild(el("span","hint","список слов · для словаря")); }
         else {
