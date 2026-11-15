@@ -219,6 +219,7 @@ textarea{resize:vertical;min-height:84px}
 /* v2: главная и страница челленджа */
 .app{display:grid;gap:22px}
 .authbox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.tgbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tgform{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tgform input{width:170px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}.tgform .hint{font-size:12px;color:var(--muted)}.tgform .hint.err{color:#c0392b}
 .grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .ccard{display:grid;gap:10px;align-content:start;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:transform .15s ease, border-color .15s ease;text-align:left;font:inherit;cursor:pointer}
 .ccard:hover{transform:translateY(-2px);border-color:var(--ink)}
@@ -396,6 +397,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
 (function(){
   "use strict";
   const OWNER_EMAIL = "zufa18.ru@gmail.com";
+  let TG_BOT = "";   // бот сам пишет свой юзернейм в meta/telegram при запуске
   const EM_BASE = window.EM_BASE || "em/";
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, text) => { const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; };
@@ -630,11 +632,50 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   let createBasic = false, pendingCreateRef = null;
   const clampNum = (v, lo, hi, d) => { const n = Math.round(Number(v)); return isFinite(n) && v!=="" ? Math.max(lo, Math.min(hi, n)) : d; };
 
+  // ---------- Telegram: юзернейм для бота (users/{uid}/profile/telegram, видит только сам человек) ----------
+  const cleanTg = (s) => String(s||"").trim().replace(/^https?:\/\/t\.me\//i,"").replace(/^@+/,"").toLowerCase();
+  function tgNode(){
+    const w = el("div","tgbox");
+    if(!state.tgEditing){
+      const b = el("button","btn ghost", state.tg ? "Telegram: @"+state.tg : "Привязать Telegram"); b.type="button";
+      b.title = "Бот узнает тебя по этому юзернейму";
+      b.addEventListener("click", () => { state.tgEditing = true; drafts.tgUser = state.tg ? "@"+state.tg : ""; render(); setTimeout(() => { const i=$("tgUser"); if(i) i.focus(); }, 0); });
+      w.appendChild(b);
+      if(state.tg && TG_BOT){ const a = el("a","btn ghost","Открыть бота"); a.href="https://t.me/"+TG_BOT; a.target="_blank"; a.rel="noopener"; w.appendChild(a); }
+      return w;
+    }
+    const f = el("form","tgform"); f.autocomplete="off";
+    const inp = el("input"); inp.id="tgUser"; inp.placeholder="@username"; inp.maxLength=40; inp.value = drafts.tgUser ?? "";
+    inp.addEventListener("input", () => { drafts.tgUser = inp.value; });
+    const ok = el("button","btn primary","Сохранить"); ok.type="submit";
+    const cn = el("button","btn ghost","Отмена"); cn.type="button"; cn.addEventListener("click", () => { state.tgEditing=false; delete drafts.tgUser; render(); });
+    const msg = el("span","hint","Твой юзернейм в Telegram — по нему бот поймёт, что пишешь ты");
+    f.append(inp, ok, cn, msg);
+    f.addEventListener("submit", async (ev) => {
+      ev.preventDefault(); const u = cleanTg(inp.value);
+      if(u && !/^[a-z0-9_]{5,32}$/.test(u)){ msg.textContent="Юзернейм: 5–32 символа, латиница, цифры и _"; msg.classList.add("err"); return; }
+      ok.disabled = true;
+      try{
+        const ref = fs.doc("users/"+state.me+"/profile/telegram");
+        if(u) await ref.set({ username:u, updatedAt:new Date().toISOString() }); else await ref.delete();
+        state.tg = u; state.tgEditing = false; delete drafts.tgUser; render();
+      }catch(e){ ok.disabled=false; setStatus(explain(e), true); }
+    });
+    w.appendChild(f); return w;
+  }
+  let tgSub = null;
+  function watchTg(uid){
+    if(tgSub){ tgSub(); tgSub = null; } state.tg = ""; state.tgEditing = false;
+    if(uid && !TG_BOT) fs.doc("meta/telegram").get().then(d => { const b = d.exists && d.data() && d.data().bot; if(b){ TG_BOT = String(b); render(); } }).catch(() => {});
+    if(uid) tgSub = fs.doc("users/"+uid+"/profile/telegram").onSnapshot(d => { state.tg = (d.exists && d.data() && d.data().username) || ""; render(); }, () => {});
+  }
+
   function authNode(){
     const box = el("div","authbox");
     if(state.signedIn){
       box.appendChild(el("span","muted", state.myName || "Ты вошёл"));
       const b = el("button","btn ghost","Выйти"); b.type="button"; b.addEventListener("click", () => auth.signOut()); box.appendChild(b);
+      box.appendChild(tgNode());
     } else {
       const b = el("button","btn primary","Войти через Google"); b.type="button"; b.addEventListener("click", signIn); box.appendChild(b);
     }
@@ -1542,6 +1583,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   auth.onAuthStateChanged(async u => {
     if((u ? u.uid : null) !== state.me) resetUiState();
     state.signedIn = !!u; state.me = u ? u.uid : null; state.myName = u ? (u.displayName||"") : ""; state.isOwner = !!(u && u.email===OWNER_EMAIL);
+    watchTg(state.me);
     setStatus(""); render();
     if(u){ await migrate(); }
   });
