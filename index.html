@@ -219,7 +219,6 @@ textarea{resize:vertical;min-height:84px}
 /* v2: главная и страница челленджа */
 .app{display:grid;gap:22px}
 .authbox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
-.tgbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tgform{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tgform input{width:170px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}.tgform .hint{font-size:12px;color:var(--muted)}.tgform .hint.err{color:#c0392b}
 .grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .ccard{display:grid;gap:10px;align-content:start;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:transform .15s ease, border-color .15s ease;text-align:left;font:inherit;cursor:pointer}
 .ccard:hover{transform:translateY(-2px);border-color:var(--ink)}
@@ -321,6 +320,45 @@ textarea{resize:vertical;min-height:84px}
 .hintopts .opt{width:100%;text-align:center;font-weight:500}
 .hintopts .opt:hover{border-color:var(--ink)}
 
+/* plan + report fields */
+.plan{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.pstrip{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;cursor:pointer;font-size:14px}
+.pstrip:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.pstrip b{font-weight:600}.pstrip .muted:last-child{margin-left:auto}
+.pbar{height:5px;width:70px;border-radius:9px;background:var(--accent-soft);overflow:hidden;margin-left:auto}.pbar i{display:block;height:100%;background:var(--accent)}
+.pbar + .muted{margin-left:0!important}
+.pbody{border-top:1px solid var(--line);padding:10px 12px;display:grid;gap:10px}
+.ppager{display:flex;align-items:center;gap:8px}.ppager b{flex:1;text-align:center;font-family:var(--display);font-size:14px}
+.btn.mini{padding:2px 9px;font-size:14px;border-radius:8px}
+.pitems{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pit{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}.pit:last-child{border:0}
+.pcb{all:unset;box-sizing:border-box;flex:none;width:22px;height:22px;border:2px solid var(--accent);border-radius:6px;display:grid;place-items:center;font-size:14px;line-height:1;margin-top:1px}
+button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pcb{width:44px!important;height:44px!important;margin:-11px -11px -11px -11px;border:0!important;background:transparent!important;display:grid;place-items:center}
+.pcb::before{content:"";box-sizing:border-box;width:22px;height:22px;border:2px solid var(--accent);border-radius:6px;display:grid;place-items:center;font-size:14px;line-height:1;color:var(--accent-ink)}
+.pit.done .pcb::before{content:"✓";background:var(--accent)}
+.pit{align-items:center}.pstrip{min-height:44px}
+@media (pointer:coarse),(max-width:560px){.btn.mini{min-width:44px;min-height:44px}.padd button{min-height:44px}.chip{min-height:36px}}
+.pit.done .ptt b{text-decoration:line-through;color:var(--muted)}
+.ptx{flex:1;min-width:0;overflow-wrap:anywhere}.pnote{font-size:12px;color:var(--muted)}.pnote.pmine{font-style:italic;color:var(--ink)}
+.pacts{display:flex;gap:2px;flex:none}
+.padd{display:grid;grid-template-columns:1fr 130px auto;gap:8px;border-top:0!important;padding-top:0!important}
+.padd input,.pedit input,.pedit textarea,.fedit input[type=text],.fedit select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.pedit{display:grid;gap:6px;flex:1;border-top:0!important;padding-top:0!important}.pedit label{display:grid;gap:2px;font-size:12px;color:var(--muted)}
+.ptools{display:grid;gap:8px}
+.dropwrap{display:grid;gap:6px}
+.drop{border:2px dashed var(--muted);border-radius:12px;padding:14px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer}.drop.over,.drop:focus-visible{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.pastebox summary{cursor:pointer;font-size:12px;color:var(--muted)}.pastebox textarea{width:100%;margin:6px 0;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font:12px/1.4 monospace}
+.fedit{display:grid;gap:6px}
+.frow2{display:grid;grid-template-columns:1fr 150px auto auto auto auto;gap:6px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:var(--surface)}
+.frow2.fixed{display:flex;gap:10px;align-items:center}
+.frow2 .check.small{font-size:12px;display:flex;gap:4px;align-items:center;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12px;background:var(--surface);cursor:pointer}.chip:disabled{opacity:.5}
+.tplbox{display:grid;gap:8px}
+.fx{font-size:13px}.fx b{font-weight:600}
+@media (max-width:560px){.frow2{grid-template-columns:1fr 1fr;}.padd{grid-template-columns:1fr}}
+.tplpre{margin:6px 0;padding:8px;background:var(--bg);border-radius:8px;font:11px/1.4 monospace;overflow:auto;max-height:200px;white-space:pre}
+#status{position:sticky;top:8px;z-index:60}
 </style>
 </head>
 <body>
@@ -358,7 +396,6 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
 (function(){
   "use strict";
   const OWNER_EMAIL = "zufa18.ru@gmail.com";
-  let TG_BOT = "";   // бот сам пишет свой юзернейм в meta/telegram при запуске
   const EM_BASE = window.EM_BASE || "em/";
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, text) => { const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; };
@@ -475,12 +512,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   window.addEventListener("hashchange", () => { parseRoute(); window.scrollTo(0,0); render(); });
 
   // ---------- live data ----------
+  let _rt = 0; function scheduleRender(){ if(_rt) return; _rt = setTimeout(() => { _rt = 0; render(); }, 40); }   // пачка снапшотов → один render
   const memberSubs = {};
   function watchMembers(cid){
     if(!fs || memberSubs[cid]) return;
     memberSubs[cid] = fs.collection("challenges/"+cid+"/members").onSnapshot(snap => {
       const next = {}; snap.docs.forEach(d => { const v=d.data(); if(v && typeof v==="object") next[d.id]=v; });
-      state.members[cid] = next; render();
+      state.members[cid] = next; if(snap.metadata && snap.metadata.hasPendingWrites){ clearTimeout(_rt); _rt = 0; render(); } else scheduleRender();   // своя запись — сразу, чужие — пачкой
     }, () => {});
   }
 
@@ -534,7 +572,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     // create card
     const add = el("button","ccard add"); add.type="button";
     add.append(el("span","plus","+"), el("b",null,"Создать челлендж"), el("span","muted","Любая привычка: спорт, чтение, код…"));
-    add.addEventListener("click", () => { if(!state.me){ setStatus("Сначала войди через Google."); return; } state.creating = true; render(); setTimeout(()=>{ const t=$("nTitle"); if(t) t.focus(); },0); });
+    add.addEventListener("click", () => { if(!state.me){ setStatus("Сначала войди через Google."); return; } delete fieldDrafts.new; delete tplDrafts.new; state.creating = true; render(); setTimeout(()=>{ const t=$("nTitle"); if(t) t.focus(); },0); });
     sec.appendChild(add);
     app.appendChild(sec);
     if(!ids.length) app.appendChild(el("div","empty","Челленджей пока нет. Создай первый."));
@@ -559,73 +597,44 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const r1 = el("div","row2"); r1.append(field("nMin","Минут в день",minutes), field("nGoal","Длительность, дней",goal)); f.appendChild(r1);
     const r2 = el("div","row2"); r2.append(field("nStart","Дата старта",start), field("nPen","Штраф за срыв серии, ₽",pen)); f.appendChild(r2);
     const dl = el("label","check"); dl.htmlFor="nDict"; dict.id="nDict"; dl.append(dict, document.createTextNode("Общий словарь новых слов (для языков)")); f.appendChild(dl);
+    const fe = fieldsEditor("new", defaultFields(false), () => dict.checked);
+    dict.addEventListener("change", () => { fieldDrafts.new = ensureWords(fieldDrafts.new, dict.checked); fe.redraw(); });
+    f.append(el("h3",null,"Форма отчёта"), el("div","hint","Какие поля участники заполняют в ежедневном отчёте. Выбери под свой челлендж — потом можно изменить."), fe.node);
+    const pl = el("label","check"); const pc = el("input"); pc.type="checkbox"; pc.id="nPlan"; pl.htmlFor="nPlan"; pl.append(pc, document.createTextNode("План с чек-пойнтами по месяцам (у каждого участника свой)")); f.appendChild(pl);
+    const tb = templateBox("new", ""); tb.hidden = true; pc.addEventListener("change", () => { tb.hidden = !pc.checked; }); f.appendChild(tb);
     const btns = el("div","btns left");
     const ok = el("button","btn primary","Создать и вступить"); ok.type="submit";
-    const cancel = el("button","btn ghost","Отмена"); cancel.type="button"; cancel.addEventListener("click", () => { state.creating=false; render(); });
+    const cancel = el("button","btn ghost","Отмена"); cancel.type="button"; cancel.addEventListener("click", () => { delete fieldDrafts.new; delete tplDrafts.new; state.creating=false; render(); });
     btns.append(ok, cancel); f.appendChild(btns);
     f.addEventListener("submit", async (ev) => {
       ev.preventDefault(); if(!state.me) return;
       const t = title.value.trim(); if(!t) return;
-      ok.disabled = true;
-      const ref = fs.collection("challenges").doc();
+      ok.disabled = true; ok.textContent = "Создаю…"; const slow = setTimeout(() => { setStatus("База долго не отвечает. Проверь интернет; если так же и дальше — правила Firestore могут блокировать запись. Можно нажать «Создать» ещё раз — дубля не будет.", true); ok.disabled = false; ok.textContent = "Создать и вступить"; }, 8000);
+      const ref = pendingCreateRef || (pendingCreateRef = fs.collection("challenges").doc());
       const now = new Date().toISOString();
       try{
-        await ref.set({ title:t, topic:topic.value.trim().slice(0,30), description:desc.value.trim().slice(0,400),
+        const cdata = { title:t, topic:topic.value.trim().slice(0,30), description:desc.value.trim().slice(0,400),
           minutes: clampNum(minutes.value,1,600,20), goalDays: clampNum(goal.value,1,1000,30), startDate: isKey(start.value)?start.value:today(),
-          penalty: clampNum(pen.value,0,100000,500), dictionary: dict.checked, createdBy: state.me, createdAt: now, paid:{} });
-        await fs.doc("challenges/"+ref.id+"/members/"+state.me).set({ nick: state.myName.slice(0,30), joinedAt: now, days:{} });
-        state.creating = false; location.hash = "c-"+ref.id;
-      }catch(e){ setStatus(explain(e), true); ok.disabled=false; }
+          penalty: clampNum(pen.value,0,100000,500), dictionary: dict.checked, ...(createBasic ? {} : { fields: cleanFields(ensureWords(fieldDrafts.new, dict.checked)), planEnabled: pc.checked, planTemplate: (pc.checked && tplDrafts.new) ? tplDrafts.new : "" }), createdBy: state.me, createdAt: now, paid:{} };
+        await ref.set(cdata);
+        await fs.doc("challenges/"+ref.id+"/members/"+state.me).set(Object.assign({ nick: state.myName.slice(0,30), joinedAt: now, days:{} }, templatePatchOf(cdata)));
+        delete fieldDrafts.new; delete tplDrafts.new; state.creating = false; location.hash = "c-"+ref.id; createBasic = false; pendingCreateRef = null;
+      }catch(e){ createBasic = false; const denied = e && e.code==="permission-denied"; const msg = denied ? "База отклонила создание. Если ты вошёл — правила Firestore не пускают новые поля челленджа: fields, planEnabled, planTemplate. Их нужно разрешить в правилах." : explain(e); setStatus(msg, true); ok.disabled=false; ok.textContent="Создать и вступить"; let m = $("createErr"); if(!m){ m = el("div","msg err"); m.id="createErr"; btns.after(m); } m.replaceChildren(document.createTextNode(msg+" "));
+        if(denied){ const bb = el("button","btn","Создать без плана и своих полей"); bb.type="button"; bb.addEventListener("click", () => { createBasic = true; f.requestSubmit(); }); m.appendChild(bb); }
+        m.scrollIntoView({block:"center"}); }
+      clearTimeout(slow); if(!location.hash.startsWith("#c-")) setTimeout(() => {}, 0);
     });
     p.appendChild(f);
     return p;
   }
+  let createBasic = false, pendingCreateRef = null;
   const clampNum = (v, lo, hi, d) => { const n = Math.round(Number(v)); return isFinite(n) && v!=="" ? Math.max(lo, Math.min(hi, n)) : d; };
-
-  // ---------- Telegram: юзернейм для бота (users/{uid}/profile/telegram, видит только сам человек) ----------
-  const cleanTg = (s) => String(s||"").trim().replace(/^https?:\/\/t\.me\//i,"").replace(/^@+/,"").toLowerCase();
-  function tgNode(){
-    const w = el("div","tgbox");
-    if(!state.tgEditing){
-      const b = el("button","btn ghost", state.tg ? "Telegram: @"+state.tg : "Привязать Telegram"); b.type="button";
-      b.title = "Бот узнает тебя по этому юзернейму";
-      b.addEventListener("click", () => { state.tgEditing = true; drafts.tgUser = state.tg ? "@"+state.tg : ""; render(); setTimeout(() => { const i=$("tgUser"); if(i) i.focus(); }, 0); });
-      w.appendChild(b);
-      if(state.tg && TG_BOT){ const a = el("a","btn ghost","Открыть бота"); a.href="https://t.me/"+TG_BOT; a.target="_blank"; a.rel="noopener"; w.appendChild(a); }
-      return w;
-    }
-    const f = el("form","tgform"); f.autocomplete="off";
-    const inp = el("input"); inp.id="tgUser"; inp.placeholder="@username"; inp.maxLength=40; inp.value = drafts.tgUser ?? "";
-    inp.addEventListener("input", () => { drafts.tgUser = inp.value; });
-    const ok = el("button","btn primary","Сохранить"); ok.type="submit";
-    const cn = el("button","btn ghost","Отмена"); cn.type="button"; cn.addEventListener("click", () => { state.tgEditing=false; delete drafts.tgUser; render(); });
-    const msg = el("span","hint","Твой юзернейм в Telegram — по нему бот поймёт, что пишешь ты");
-    f.append(inp, ok, cn, msg);
-    f.addEventListener("submit", async (ev) => {
-      ev.preventDefault(); const u = cleanTg(inp.value);
-      if(u && !/^[a-z0-9_]{5,32}$/.test(u)){ msg.textContent="Юзернейм: 5–32 символа, латиница, цифры и _"; msg.classList.add("err"); return; }
-      ok.disabled = true;
-      try{
-        const ref = fs.doc("users/"+state.me+"/profile/telegram");
-        if(u) await ref.set({ username:u, updatedAt:new Date().toISOString() }); else await ref.delete();
-        state.tg = u; state.tgEditing = false; delete drafts.tgUser; render();
-      }catch(e){ ok.disabled=false; setStatus(explain(e), true); }
-    });
-    w.appendChild(f); return w;
-  }
-  let tgSub = null;
-  function watchTg(uid){
-    if(tgSub){ tgSub(); tgSub = null; } state.tg = ""; state.tgEditing = false;
-    if(uid && !TG_BOT) fs.doc("meta/telegram").get().then(d => { const b = d.exists && d.data() && d.data().bot; if(b){ TG_BOT = String(b); render(); } }).catch(() => {});
-    if(uid) tgSub = fs.doc("users/"+uid+"/profile/telegram").onSnapshot(d => { state.tg = (d.exists && d.data() && d.data().username) || ""; render(); }, () => {});
-  }
 
   function authNode(){
     const box = el("div","authbox");
     if(state.signedIn){
       box.appendChild(el("span","muted", state.myName || "Ты вошёл"));
       const b = el("button","btn ghost","Выйти"); b.type="button"; b.addEventListener("click", () => auth.signOut()); box.appendChild(b);
-      box.appendChild(tgNode());
     } else {
       const b = el("button","btn primary","Войти через Google"); b.type="button"; b.addEventListener("click", signIn); box.appendChild(b);
     }
@@ -683,12 +692,17 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   function joinNode(cid){
     const p = el("section","panel join");
     p.appendChild(el("h2",null,"Вступить в челлендж"));
+    { const c = ch(cid), parts = [];
+      const fl = (Array.isArray(c.fields) ? cleanFields(c.fields) : defaultFields(!!c.dictionary)).map(f => f.label);
+      if(fl.length) parts.push("В отчёте: "+fl.join(", ")+".");
+      if(c.planEnabled){ let n = 0; try{ n = c.planTemplate ? normalizePlan(JSON.parse(c.planTemplate)).count : 0; }catch(e){} parts.push("Есть личный план с чек-пойнтами по месяцам"+(n ? ": на старте у тебя будет "+planWord(n)+" из шаблона." : ", он у каждого свой и виден другим.")); }
+      if(parts.length) p.appendChild(el("div","hint",parts.join(" "))); }
     const f = el("form","rename"); const i = el("input"); i.type="text"; i.id="joinNick"; i.maxLength=30; i.placeholder="Как тебя подписать"; i.value = drafts.joinNick ?? state.myName;
     i.addEventListener("input", () => drafts.joinNick = i.value);
     const b = el("button","btn primary","Вступить"); b.type="submit";
     f.append(i,b);
     f.addEventListener("submit", async (ev) => { ev.preventDefault(); b.disabled=true;
-      const ok = await saveMember(cid, { nick: i.value.trim().slice(0,30), joinedAt: new Date().toISOString(), days:{} });
+      const ok = await saveMember(cid, Object.assign({ nick: i.value.trim().slice(0,30), joinedAt: new Date().toISOString(), days:{} }, templatePatch(cid)));
       if(ok){ delete drafts.joinNick; state.selected[cid]=state.me; } b.disabled=false; });
     p.appendChild(f); return p;
   }
@@ -704,6 +718,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const nm = el("div","bname"); nm.append(el("span","muted num",String(i+1)), emojiBox(m.emoji, true), el("span",null, nameOf(cid, uid)+(uid===state.me?" (ты)":"")));
       const stc = el("div","bstats2");
       stc.append(el("span","bs num rep","+ реп "+st.streak), el("span","bs", st.freeze ? "🛡" : "🛡 "+st.toNext+"д"), el("span", "bs "+(st.doneToday?"ok":"todo"), st.doneToday?"✓ сегодня":"сегодня —"));
+      if(ch(cid).planEnabled){ const ps = planStat(cid, uid); stc.appendChild(el("span","bs num", ps.total ? "план "+ps.done+"/"+ps.total : "план —")); }
       if(st.debt) stc.appendChild(el("span","bs debt", rub(st.debt)));
       b.append(nm, stc); list.appendChild(b);
     });
@@ -734,6 +749,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     tl.appendChild(pills);
     ctop.append(tl, streakNode(cid, uid, st, mine)); col.appendChild(ctop);
     col.appendChild(goalsNode(cid, uid, mine));
+    if(ch(cid).planEnabled) col.appendChild(planNode(cid, uid, mine));
     const stats = el("div","stats");
     [["лучшая серия",st.best],["дней",st.full],["минут",st.total]].concat(ch(cid).dictionary?[["слов",st.words]]:[]).forEach(([l,v]) => { const d=el("div"); d.appendChild(el("b","num",String(v))); d.appendChild(document.createTextNode(l)); stats.appendChild(d); });
     col.appendChild(stats);
@@ -741,7 +757,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const hasToday = !!daysOf(cid, uid)[today()];
       if(!hasToday || editingReport.has(cid)) col.appendChild(reportForm(cid));
       else { const add = el("button","btn ghost addday","+ Отчёт за другой день"); add.type="button";
-        add.addEventListener("click", () => { editingReport.add(cid); drafts.fDate = addDays(today(),-1); ["fMin","fText","fWords"].forEach(x=>delete drafts[x]); render(); const f=$("fText"); if(f) f.focus({preventScroll:true}); });
+        add.addEventListener("click", () => { editingReport.add(cid); drafts.fDate = addDays(today(),-1); clearRepDrafts(); render(); const f=$("fText"); if(f) f.focus({preventScroll:true}); });
         col.appendChild(add); }
     }
     const days = daysOf(cid, uid); const keys = Object.keys(days).sort().reverse();
@@ -820,17 +836,24 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const date = el("input"); date.type="date"; date.id=dId; date.max=today(); date.value = drafts[dId] || today();
     const existing = daysOf(cid, state.me)[date.value];
     const mn = el("input"); mn.type="number"; mn.id=mId; mn.min=1; mn.max=600; mn.value = drafts[mId] ?? (existing ? mins(existing) : g);
-    const tx = el("textarea"); tx.id=tId; tx.maxLength=2000; tx.placeholder="Что сделал сегодня"; tx.value = drafts[tId] ?? (existing && existing.text || "");
-    const wd = el("textarea"); wd.id=wId; wd.maxLength=2000; wd.placeholder="to come up with — придумать"; wd.value = drafts[wId] ?? (existing && Array.isArray(existing.words) ? existing.words.map(w => w.ru ? w.en+" — "+w.ru : w.en).join("\n") : "");
-    [date,mn,tx,wd].forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; }));
-    date.addEventListener("change", () => { drafts[dId]=date.value; delete drafts[mId]; delete drafts[tId]; delete drafts[wId]; render(); });
+    const ctrls = [];
+    fieldsOf(cid).forEach(fd => {
+      const id = fieldInputId(fd); const multi = fd.type==="long" || fd.type==="list";
+      const n = multi ? el("textarea") : el("input"); n.id = id; n.maxLength = multi ? 2000 : 200;
+      if(!multi){ n.type = fd.type==="number" ? "number" : "text"; if(fd.type==="number"){ n.step="any"; n.inputMode="decimal"; } }
+      if(fd.id==="text") n.placeholder="Что сделал сегодня"; if(fd.id==="words") n.placeholder="to come up with — придумать";
+      n.value = drafts[id] ?? fieldValueText(existing, fd);
+      ctrls.push([fd, n]);
+    });
+    [date,mn].concat(ctrls.map(x => x[1])).forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; }));
+    date.addEventListener("change", () => { drafts[dId]=date.value; clearRepDrafts(); render(); });
     const title = existing ? "Правка отчёта за "+(date.value===today()?"сегодня":human(date.value)) : (date.value===today() ? "Отчёт за сегодня" : "Отчёт за "+human(date.value));
     f.appendChild(el("h3",null,title));
     const r = el("div","row2"); const l1 = el("label",null,"Дата"); l1.htmlFor=dId; l1.appendChild(date); const l2 = el("label",null,"Минут (нужно "+g+")"); l2.htmlFor=mId; l2.appendChild(mn); r.append(l1,l2); f.appendChild(r);
-    const l3 = el("label",null,"Что сделал"); l3.htmlFor=tId; l3.appendChild(tx); f.appendChild(l3);
-    if(ch(cid).dictionary){ const l4 = el("label",null,"Новые слова "); l4.htmlFor=wId; l4.appendChild(el("span","hint","по одному на строку: word — перевод")); l4.appendChild(wd); f.appendChild(l4); }
+    ctrls.forEach(([fd, n]) => { const l = el("label",null,fd.label+(fd.type==="list"?" ":"")); l.htmlFor=n.id;
+      if(fd.type==="list") l.appendChild(el("span","hint","по одному на строку"+(fd.id==="words"?": word — перевод":""))); l.appendChild(n); f.appendChild(l); });
     const btns = el("div","btns left"); const save = el("button","btn primary","Сохранить отчёт"); save.type="submit"; btns.appendChild(save);
-    const endEdit = () => { editingReport.delete(cid); [dId,mId,tId,wId].forEach(x=>delete drafts[x]); };
+    const endEdit = () => { editingReport.delete(cid); clearRepDrafts(); delete drafts[dId]; };
     if(editingReport.has(cid)){ const cn = el("button","btn ghost","Отмена"); cn.type="button"; cn.addEventListener("click", () => { endEdit(); render(); }); btns.appendChild(cn); }
     let armed=false;
     if(existing){ const del = el("button","btn ghost","Удалить этот день"); del.type="button"; btns.appendChild(del);
@@ -842,10 +865,23 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       ev.preventDefault(); const k = date.value;
       const show = (t, err) => { msg.textContent=t; msg.classList.remove("hidden"); msg.classList.toggle("err",!!err); };
       if(!isKey(k) || k>today()){ show("Выбери дату не позже сегодняшней.", true); return; }
-      const text = tx.value.trim(); if(!text){ show("Напиши пару строк о том, что сделал.", true); return; }
+      for(const [fd, n] of ctrls){ if(fd.req && !n.value.trim()){ show("Заполни поле «"+fd.label+"».", true); return; } }
       const minutes = clampNum(mn.value,1,600,g);
       const now = new Date().toISOString(); const prev = daysOf(cid, state.me)[k];
-      const rec = { minutes, text:text.slice(0,2000), words: ch(cid).dictionary ? parseWords(wd.value) : [], createdAt:(prev&&prev.createdAt)||now, updatedAt:now };
+      const rec = { minutes, createdAt:(prev&&prev.createdAt)||now, updatedAt:now };
+      const v = {}, fsnap = []; const prevV = prev && prev.v && typeof prev.v==="object" ? prev.v : {};
+      ctrls.forEach(([fd, n]) => {
+        const raw = n.value.trim();
+        if(fd.id==="text"){ rec.text = raw.slice(0,2000); return; }
+        if(fd.id==="words"){ rec.words = parseWords(n.value); return; }
+        fsnap.push({ id:fd.id, label:fd.label, type:fd.type });
+        if(!raw){ if(fd.id in prevV) v[fd.id] = FV.delete(); return; }
+        if(fd.type==="number"){ const num = Number(raw.replace(",",".")); if(isFinite(num)) v[fd.id] = num; }
+        else if(fd.type==="list") v[fd.id] = raw.split("\n").map(x => x.trim()).filter(Boolean).slice(0,60).map(x => x.slice(0,200));
+        else v[fd.id] = raw.slice(0,2000);
+      });
+      if(prev && Array.isArray(prev.f)) prev.f.forEach(pf => { if(pf && pf.id && !fsnap.some(x => x.id===pf.id)) fsnap.push({ id:String(pf.id), label:str(pf.label,60), type:str(pf.type,10)||"short" }); });
+      if(fsnap.length) rec.f = fsnap; if(Object.keys(v).length) rec.v = v;
       save.disabled = true;
       if(await saveMember(cid, { days: { [k]: rec } })){ endEdit(); render(); }
       else save.disabled=false;
@@ -860,11 +896,14 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const m = mins(r), g = goalMinOf(cid);
     const e = el("article","entry"+(m<g?" part":""));
     const meta = el("div","meta"); meta.append(el("span","who num", k===today()?"Сегодня":human(k)), el("span","pill "+(m>=g?"done":"part"), m+" мин"));
-    if(uid===state.me){ const ed = el("button","btn ghost","Изменить"); ed.type="button"; ed.addEventListener("click", () => { editingReport.add(cid); drafts.fDate=k; ["fMin","fText","fWords"].forEach(x=>delete drafts[x]); render(); const f=$("fText"); if(f){ f.scrollIntoView({behavior:"smooth",block:"center"}); f.focus({preventScroll:true}); } }); meta.appendChild(ed); }
+    if(uid===state.me){ const ed = el("button","btn ghost","Изменить"); ed.type="button"; ed.addEventListener("click", () => { editingReport.add(cid); drafts.fDate=k; clearRepDrafts(); render(); const f=$("fText"); if(f){ f.scrollIntoView({behavior:"smooth",block:"center"}); f.focus({preventScroll:true}); } }); meta.appendChild(ed); }
     e.appendChild(meta);
     if(typeof r.text==="string" && r.text) e.appendChild(el("div","text",r.text));
     const ws = Array.isArray(r.words)?r.words:[];
     if(ws.length){ const w = el("div","words"); ws.slice(0,60).forEach(x => { if(!x||typeof x!=="object") return; const s=el("span","word"); s.appendChild(el("b",null,String(x.en||""))); if(x.ru) s.appendChild(document.createTextNode(" — "+String(x.ru))); w.appendChild(s); }); e.appendChild(w); }
+    const fxs = Array.isArray(r.f) ? r.f : []; const vv = r.v && typeof r.v==="object" ? r.v : {};
+    fxs.forEach(fd => { if(!fd || typeof fd!=="object") return; const val = vv[fd.id]; if(val==null || val==="" || (Array.isArray(val) && !val.length)) return;
+      const row = el("div","fx"); row.append(el("b",null,str(fd.label,60)+": "), document.createTextNode(Array.isArray(val) ? val.slice(0,60).map(x => String(x).slice(0,200)).join(" · ") : String(val).slice(0,2000))); e.appendChild(row); });
     return e;
   }
 
@@ -909,7 +948,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   const progSubs = {};
   function watchProgress(cid){
     if(!fs || !state.me || progSubs[cid+"|"+state.me]) return;
-    progSubs[cid+"|"+state.me] = fs.doc("users/"+state.me+"/progress/"+cid).onSnapshot(d => { progress[cid] = (d.exists && d.data()) || {}; render(); }, () => {});
+    progSubs[cid+"|"+state.me] = fs.doc("users/"+state.me+"/progress/"+cid).onSnapshot(d => { progress[cid] = (d.exists && d.data()) || {}; scheduleRender(); }, () => {});
   }
   const progOf = (cid, wk) => ((progress[cid]||{}).words||{})[wk] || {};
   const LEARN_AT = 3, CLEAR_AT = 2;
@@ -1105,6 +1144,309 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     row.appendChild(ul); box.appendChild(row); return box;
   }
 
+  // ======================= ПЛАН С ЧЕК-ПОЙНТАМИ И ПОЛЯ ОТЧЁТА =======================
+  // Данные плана лежат в challenges/{cid}/members/{uid}.plan = { "YYYY-MM": { items:[{id,title,size,why,intro,note,done}] } }
+  // Поля отчёта: challenges/{cid}.fields = [{id,label,type,req}], шаблон плана: challenges/{cid}.planTemplate (JSON-строка)
+  const PLAN_MAX_ITEMS = 80, PLAN_MAX_BYTES = 850000, TPL_MAX = 200000;
+  const MONTH_ID = /^\d{4}-(0[1-9]|1[0-2])$/;
+  const rid = () => Math.random().toString(36).slice(2,8);
+  const str = (v,n) => typeof v==="string" ? v.trim().slice(0,n) : "";
+  const openPlan = new Set(), planMonth = {}, fieldDrafts = {}, tplDrafts = {};
+  let editItem = null;
+  const flash = (t, err) => { setStatus(t, err); setTimeout(() => setStatus(""), err ? 6000 : 3500); };
+  const shiftMonth = (mk, n) => { const [y,m] = mk.split("-").map(Number); const d = new Date(y, m-1+n, 1); return d.getFullYear()+"-"+pad(d.getMonth()+1); };
+
+  function resetUiState(){
+    Object.keys(drafts).forEach(k => delete drafts[k]);
+    [openPlan, editingReport, editingGoals, openComments, openPast].forEach(s => s.clear());
+    Object.keys(planMonth).forEach(k => delete planMonth[k]); Object.keys(fieldDrafts).forEach(k => delete fieldDrafts[k]); Object.keys(tplDrafts).forEach(k => delete tplDrafts[k]);
+    editItem = null; renaming = false; openEmoji = false; state.creating = false;
+  }
+  // ---- поля отчёта ----
+  const FTYPES = [["short","Короткий текст"],["long","Длинный текст"],["number","Число"],["list","Список (по строке)"]];
+  const defaultFields = (dict) => { const a = [{id:"text",label:"Что сделал",type:"long",req:true}]; if(dict) a.push({id:"words",label:"Новые слова",type:"list",req:false}); return a; };
+  function cleanFields(arr){
+    const out=[], seen=new Set();
+    (Array.isArray(arr)?arr:[]).forEach(f => {
+      if(!f || typeof f!=="object") return;
+      const id = String(f.id||"").replace(/[^A-Za-z0-9_-]/g,"").slice(0,20);
+      let type = FTYPES.some(t => t[0]===f.type) ? f.type : "short";
+      if(id==="words") type="list"; if(id==="text" && type!=="short" && type!=="long") type="long";
+      const label = str(f.label,60) || (FTYPES.find(t => t[0]===type)||["","Поле"])[1];
+      if(!id || !label || seen.has(id)) return; seen.add(id); out.push({ id, label, type, req: !!f.req });
+    });
+    return out.slice(0,12);
+  }
+  const fieldsOf = (cid) => { const c = ch(cid)||{}; return Array.isArray(c.fields) ? cleanFields(c.fields) : defaultFields(!!c.dictionary); };
+  function ensureWords(list, dict){
+    let a = cleanFields(list); const has = a.some(f => f.id==="words");
+    if(dict && !has) a.push({id:"words",label:"Новые слова",type:"list",req:false});
+    if(!dict && has) a = a.filter(f => f.id!=="words");
+    return a;
+  }
+  const PRESETS = [
+    ["asis","Как сейчас", d => defaultFields(d)],
+    ["read","Чтение", d => ensureWords([{id:"text",label:"Пересказ прочитанного",type:"long",req:true},{id:"p"+rid(),label:"Страниц",type:"number"}], d)],
+    ["sport","Спорт", d => ensureWords([{id:"text",label:"Что сделал",type:"long",req:true},{id:"p"+rid(),label:"Подходов / километров",type:"number"}], d)],
+    ["code","Код", d => ensureWords([{id:"text",label:"Что сделал",type:"long",req:true},{id:"p"+rid(),label:"Ссылка на коммит или PR",type:"short"}], d)]
+  ];
+  const fieldInputId = (f) => f.id==="text" ? "fText" : f.id==="words" ? "fWords" : "fv-"+f.id;
+  const clearRepDrafts = () => { Object.keys(drafts).forEach(k => { if(/^(fMin|fText|fWords|fv-.*)$/.test(k)) delete drafts[k]; }); };
+  function fieldValueText(rec, f){
+    if(!rec) return "";
+    if(f.id==="text") return typeof rec.text==="string" ? rec.text : "";
+    if(f.id==="words") return Array.isArray(rec.words) ? rec.words.map(w => w.ru ? w.en+" — "+w.ru : w.en).join("\n") : "";
+    const v = rec.v && typeof rec.v==="object" ? rec.v[f.id] : undefined;
+    return Array.isArray(v) ? v.join("\n") : (v==null ? "" : String(v));
+  }
+
+  function fieldsEditor(key, initial, dictFn){
+    if(!fieldDrafts[key]) fieldDrafts[key] = cleanFields(initial);
+    const box = el("div","fedit"); const list = () => fieldDrafts[key];
+    function draw(){
+      box.replaceChildren();
+      const top = el("div","frow2 fixed"); top.append(el("b",null,"Минуты"), el("span","hint","поле есть всегда: участник пишет, сколько минут занимался. Сколько минут нужно в день, задаётся выше — «Минут в день»")); box.appendChild(top);
+      list().forEach((f, idx) => {
+        const row = el("div","frow2");
+        if(f._def===undefined){ f._def = f.label; f._edited = false; }   // текущее название показываем серой подсказкой
+        const lab = el("input"); lab.type="text"; lab.maxLength=60; lab.placeholder = f._def; lab.value = f._edited ? f.label : ""; lab.setAttribute("aria-label","Название поля: "+f._def);
+        lab.addEventListener("input", () => { f._edited = lab.value.trim()!==""; f.label = f._edited ? lab.value : f._def; });
+        row.appendChild(lab);
+        if(f.id==="words"){ row.appendChild(el("span","hint","список слов · для словаря")); }
+        else {
+          const sel = el("select"); sel.setAttribute("aria-label","Тип поля");
+          FTYPES.filter(t => f.id!=="text" || t[0]==="short" || t[0]==="long").forEach(([t,l]) => { const o = el("option",null,l); o.value=t; if(t===f.type) o.selected=true; sel.appendChild(o); });
+          sel.addEventListener("change", () => { f.type = sel.value; }); row.appendChild(sel);
+        }
+        const rl = el("label","check small"); const rc = el("input"); rc.type="checkbox"; rc.checked=!!f.req; rc.addEventListener("change", () => { f.req = rc.checked; }); rl.append(rc, document.createTextNode("обяз.")); row.appendChild(rl);
+        const mkb = (txt, lbl, fn, dis) => { const b = el("button","btn ghost mini",txt); b.type="button"; b.setAttribute("aria-label",lbl); b.disabled=!!dis; b.addEventListener("click", fn); return b; };
+        row.append(mkb("↑","Выше", () => { const a=list(); [a[idx-1],a[idx]]=[a[idx],a[idx-1]]; draw(); }, idx===0),
+                   mkb("↓","Ниже", () => { const a=list(); [a[idx+1],a[idx]]=[a[idx],a[idx+1]]; draw(); }, idx===list().length-1),
+                   mkb("✕","Убрать поле", () => { list().splice(idx,1); draw(); }));
+        box.appendChild(row);
+      });
+      const add = el("div","chips");
+      FTYPES.forEach(([t,l]) => { const b = el("button","chip","+ "+l); b.type="button"; b.disabled = list().length>=12;
+        b.addEventListener("click", () => { list().push({ id:"f"+rid(), label:l, type:t, req:false }); draw(); }); add.appendChild(b); });
+      box.appendChild(add);
+      const pl = el("label","hint","Пресет: "); const ps = el("select"); const o0 = el("option",null,"выбрать…"); o0.value=""; ps.appendChild(o0);
+      PRESETS.forEach(([id,name]) => { const o = el("option",null,name); o.value=id; ps.appendChild(o); });
+      ps.addEventListener("change", () => { const p = PRESETS.find(x => x[0]===ps.value); if(p){ fieldDrafts[key] = p[2](!!(dictFn && dictFn())); draw(); } });
+      pl.appendChild(ps); box.appendChild(pl);
+    }
+    draw();
+    return { node: box, redraw: draw };
+  }
+
+  // ---- разбор шаблона плана (JSON или XML) ----
+  function cleanItem(i, doneMap, notes){
+    if(!i || typeof i!=="object") return null;
+    const title = str(i.title,200); if(!title) return null;
+    const oid = String(i.id||"");
+    let done = isKey(i.done) ? i.done : (i.done===true ? today() : null);
+    if(!done && oid && doneMap && doneMap[oid]) done = today();
+    return { id: rid()+rid().slice(0,2), title, size:str(i.size,40), why:str(i.why,400), intro:str(i.intro,400), note: str(i.note,600) || str(notes && notes[oid],600), done };
+  }
+  function xmlToData(txt){
+    const doc = new DOMParser().parseFromString(txt, "application/xml");
+    if(doc.getElementsByTagName("parsererror").length) throw new Error("XML не читается: проверь теги.");
+    const g = (n, t) => { const c = Array.prototype.find.call(n.children, x => x.tagName===t); return c ? c.textContent.trim() : (n.getAttribute(t)||""); };
+    const months = Array.prototype.map.call(doc.getElementsByTagName("month"), m => ({ id: m.getAttribute("id")||"", items: Array.prototype.map.call(m.getElementsByTagName("item"), it => ({ title:g(it,"title"), size:g(it,"size"), why:g(it,"why"), intro:g(it,"intro"), note:g(it,"note"), done:g(it,"done")||null })) }));
+    return { months };
+  }
+  function normalizePlan(data){
+    if(!data || typeof data!=="object" || Array.isArray(data)) throw new Error('Нужен объект вида {"format":"obsession-plan","version":1,"months":[…]}. Пример — в «Формат шаблона и пример».');
+    if(data.format!=null && data.format!=="obsession-plan") throw new Error('Это не шаблон плана Obsession: format должен быть "obsession-plan".');
+    if(Number(data.version||1) > 1) throw new Error("Шаблон новее приложения (version "+data.version+"). Обнови Obsession.");
+    const doneMap = data.done && typeof data.done==="object" && !Array.isArray(data.done) ? data.done : {};
+    const notes = data.notes && typeof data.notes==="object" ? data.notes : {};
+    const months = Array.isArray(data.months) ? data.months : (Array.isArray(data.plan) ? data.plan : null);
+    if(!months) throw new Error('Нет массива months. Месяц: {"id":"2026-11","items":[{"title":"…"}]}.');
+    const out = {}, skipped = []; let count = 0;
+    months.forEach((m, mi) => {
+      if(!m || typeof m!=="object"){ skipped.push("месяц №"+(mi+1)+": не объект"); return; }
+      const id = String(m.id||""); if(!MONTH_ID.test(id)){ skipped.push("месяц №"+(mi+1)+": id «"+id.slice(0,12)+"» не вида ГГГГ-ММ"); return; }
+      const arr = Array.isArray(m.items) ? m.items : []; if(!arr.length) skipped.push(id+": нет items");
+      arr.forEach((i, ii) => { const it = cleanItem(i, doneMap, notes);
+        if(!it) skipped.push(id+", пункт "+(ii+1)+": нет title");
+        else { out[id] = out[id] || []; if(out[id].length < PLAN_MAX_ITEMS) out[id].push(it); else skipped.push(id+": больше "+PLAN_MAX_ITEMS+" пунктов, лишние отброшены"); } });
+    });
+    const ks = Object.keys(out);
+    if(!ks.length) throw new Error("В файле нет ни одного пункта с корректным месяцем (ГГГГ-ММ) и title."+(skipped.length ? " Проблемы: "+skipped.slice(0,3).join("; ")+"." : ""));
+    ks.forEach(k => count += out[k].length);
+    return { months: out, count, monthsN: ks.length, skipped };
+  }
+  function parsePlanText(txt){
+    txt = String(txt||"").replace(/^﻿/,"").trim(); if(!txt) throw new Error("Файл пустой.");
+    let data;
+    if(txt[0]==="<") data = xmlToData(txt);
+    else { try{ data = JSON.parse(txt); }catch(e){ throw new Error("JSON не читается: проверь запятые, кавычки и скобки ("+String(e.message).slice(0,50)+")."); } }
+    return normalizePlan(data);
+  }
+  const planWord = (n) => n+" "+plural(n,"пункт","пункта","пунктов");
+
+  // ---- чтение плана участника ----
+  const planOf = (cid, uid) => { const m = memberOf(cid, uid); return m && m.plan && typeof m.plan==="object" ? m.plan : {}; };
+  const _miCache = new WeakMap();   // кэш по ссылке на массив пунктов: документ от Firestore неизменяем между снапшотами
+  function monthItems(cid, uid, mk){
+    const mm = planOf(cid, uid)[mk]; const arr = mm && Array.isArray(mm.items) ? mm.items : [];
+    const hit = _miCache.get(arr); if(hit) return hit.map(x => Object.assign({}, x));
+    const out = monthItemsRaw(arr); _miCache.set(arr, out); return out.map(x => Object.assign({}, x));
+  }
+  function monthItemsRaw(arr){ const out = [];
+    arr.forEach(i => { if(!i || typeof i!=="object") return; const title = str(i.title,200); if(!title) return;
+      out.push({ id:String(i.id||"").slice(0,30) || ("x"+out.length), title, size:str(i.size,40), why:str(i.why,400), intro:str(i.intro,400), note:str(i.note,600), done: isKey(i.done) ? i.done : null }); });
+    return out.slice(0,PLAN_MAX_ITEMS);
+  }
+  function planStat(cid, uid, mk){ const it = monthItems(cid, uid, mk || monthKey()); return { total: it.length, done: it.filter(i => i.done).length }; }
+  async function savePlanMonths(cid, map){
+    const total = JSON.stringify(memberOf(cid, state.me) || {}).length + JSON.stringify(map).length;   // весь документ участника: отчёты + план (лимит Firestore 1 МБ)
+    if(total > PLAN_MAX_BYTES){ flash("План вместе с отчётами слишком большой для хранения (лимит базы ~1 МБ). Сократи описания или убери лишние пункты.", true); return false; }
+    const plan = {}; Object.keys(map).forEach(k => { plan[k] = { items: map[k] }; });
+    return saveMember(cid, { plan });
+  }
+  function templatePatch(cid){ return templatePatchOf(ch(cid)); }
+  function templatePatchOf(c){
+    if(!c || !c.planEnabled || typeof c.planTemplate!=="string" || !c.planTemplate) return {};
+    try{ const p = normalizePlan(JSON.parse(c.planTemplate)); const plan = {}; Object.keys(p.months).forEach(k => { plan[k] = { items: p.months[k].map(x => Object.assign({}, x, { done:null, note:"" })) }; }); return { plan }; }
+    catch(e){ return {}; }
+  }
+  async function importPlan(cid, text){
+    let p; try{ p = parsePlanText(text); }catch(e){ flash(e.message, true); return; }
+    const map = {}; let added = 0;
+    Object.keys(p.months).forEach(k => {
+      const cur = monthItems(cid, state.me, k); const have = new Set(cur.map(x => x.title.toLowerCase()));
+      const add = p.months[k].filter(x => !have.has(x.title.toLowerCase())); if(add.length){ map[k] = cur.concat(add).slice(0,PLAN_MAX_ITEMS); added += add.length; }
+    });
+    if(!added){ flash("Все пункты из файла уже есть в твоём плане."); return; }
+    if(await savePlanMonths(cid, map)) flash("Добавлено: "+planWord(added)+" в "+Object.keys(map).length+" "+plural(Object.keys(map).length,"месяц","месяца","месяцев")+"."+(p.skipped.length ? " Пропущено строк: "+p.skipped.length+" — "+p.skipped.slice(0,2).join("; ")+"." : ""));
+  }
+  function exportPlan(cid){
+    const pl = planOf(cid, state.me); const months = Object.keys(pl).filter(k => MONTH_ID.test(k)).sort().map(k => ({ id:k, items: monthItems(cid, state.me, k).map(({title,size,why,intro,note,done}) => ({title,size,why,intro,note,done})) }));
+    const blob = new Blob([JSON.stringify({ format:"obsession-plan", version:1, months }, null, 2)], { type:"application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "obsession-plan.json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  // ---- зона «перетащи файл» + вставка текстом ----
+  const EXAMPLE_JSON = {format:"obsession-plan",version:1,months:[{id:"2026-11",items:[{title:"Posterior Analytics II.23–27",size:"≈60 с.",why:"Закончить Органон",intro:"Асмус, введение",note:""},{title:"Царь-рыба",size:"до 20 ноября"}]},{id:"2026-12",items:[{title:"Topics I–IV"}]}]};
+  const EXAMPLE_XML = '<?xml version="1.0" encoding="UTF-8"?>\n<plan format="obsession-plan" version="1">\n  <month id="2026-11">\n    <item><title>Posterior Analytics II.23–27</title><size>≈60 с.</size><why>Закончить Органон</why><intro>Асмус, введение</intro></item>\n    <item><title>Царь-рыба</title><size>до 20 ноября</size></item>\n  </month>\n  <month id="2026-12">\n    <item><title>Topics I–IV</title></item>\n  </month>\n</plan>\n';
+  const TPL_SPEC = "Обязательно: month.id вида ГГГГ-ММ и item.title (до 200 знаков). Необязательно: size (40), why (400), intro (400), note (600), done (дата ГГГГ-ММ-ДД). До 80 пунктов в месяце, файл до 200 КБ. Лишние поля игнорируются, пункты с ошибками пропускаются, а в сообщении будет сказано, какие и почему.";
+  function downloadText(name, text, type){ const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+  function templateHelp(){
+    const d = el("details","pastebox"); d.appendChild(el("summary",null,"Формат шаблона и пример")); d.appendChild(el("div","hint",TPL_SPEC));
+    const pre = el("pre","tplpre"); pre.textContent = JSON.stringify(EXAMPLE_JSON, null, 2); d.appendChild(pre);
+    const row = el("div","btns left"); const b1 = el("button","btn","Скачать пример JSON"), b2 = el("button","btn","Скачать пример XML"); b1.type=b2.type="button";
+    b1.addEventListener("click", () => downloadText("plan-template-example.json", JSON.stringify(EXAMPLE_JSON,null,2), "application/json"));
+    b2.addEventListener("click", () => downloadText("plan-template-example.xml", EXAMPLE_XML, "application/xml")); row.append(b1,b2); d.appendChild(row); return d;
+  }
+  function dropZone(label, onText){
+    const wrap = el("div","dropwrap");
+    const z = el("div","drop",label); z.tabIndex=0; z.setAttribute("role","button");
+    const inp = el("input"); inp.type="file"; inp.accept=".json,.xml,.txt,application/json,text/xml"; inp.hidden=true; inp.addEventListener("click", e => e.stopPropagation());
+    const run = async (t) => { try{ await onText(t); }catch(e){ flash(e.message||"Не получилось прочитать.", true); } };
+    const read = async (f) => { try{ await run(await f.text()); }catch(e){ flash("Не получилось прочитать файл.", true); } };
+    z.addEventListener("click", () => inp.click());
+    z.addEventListener("keydown", e => { if(e.key==="Enter" || e.key===" "){ e.preventDefault(); inp.click(); } });
+    inp.addEventListener("change", () => { if(inp.files[0]) read(inp.files[0]); inp.value=""; });
+    ["dragenter","dragover"].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.add("over"); }));
+    z.addEventListener("dragleave", () => z.classList.remove("over"));
+    z.addEventListener("drop", e => { e.preventDefault(); z.classList.remove("over"); const dt = e.dataTransfer; const f = dt && dt.files && dt.files[0]; if(f) read(f); else { const t = dt && dt.getData("text"); if(t) run(t); } });
+    z.appendChild(inp); wrap.appendChild(z);
+    const d = el("details","pastebox"); d.appendChild(el("summary",null,"или вставить текстом"));
+    const ta = el("textarea"); ta.rows=4; ta.placeholder='{"months":[{"id":"2026-11","items":[{"title":"…"}]}]}  или  <plan><month id="2026-11"><item><title>…</title></item></month></plan>'; ta.setAttribute("aria-label","Текст шаблона");
+    const ok = el("button","btn","Применить"); ok.type="button"; ok.addEventListener("click", async () => { await run(ta.value); ta.value=""; });
+    d.append(ta, ok); wrap.appendChild(d); wrap.appendChild(templateHelp());
+    return wrap;
+  }
+  function templateBox(key, current){
+    const box = el("div","tplbox");
+    const cur = () => key in tplDrafts ? tplDrafts[key] : (current||"");
+    function draw(){
+      box.replaceChildren(); const raw = cur(); let info = "Шаблона нет — участники начинают с пустого плана.";
+      if(raw){ try{ const p = normalizePlan(JSON.parse(raw)); info = "Шаблон: "+planWord(p.count)+", месяцев: "+p.monthsN+". Новые участники получат копию."; }catch(e){ info = "Шаблон повреждён — загрузи заново."; } }
+      box.appendChild(el("div","hint",info));
+      box.appendChild(dropZone("Перетащи шаблон .json / .xml или нажми, чтобы выбрать", async (t) => {
+        const p = parsePlanText(t); const out = JSON.stringify({ format:"obsession-plan", version:1, months: Object.keys(p.months).sort().map(k => ({ id:k, items: p.months[k].map(({title,size,why,intro}) => ({title,size,why,intro})) })) });
+        if(out.length > TPL_MAX) throw new Error("Шаблон слишком большой (больше 200 КБ).");
+        tplDrafts[key] = out; draw(); flash("Шаблон принят: "+planWord(p.count)+(p.skipped.length ? ", пропущено строк: "+p.skipped.length+" ("+p.skipped.slice(0,2).join("; ")+")" : "")+". Не забудь сохранить.");
+      }));
+      if(raw){ const rm = el("button","btn ghost","Убрать шаблон"); rm.type="button"; rm.addEventListener("click", () => { tplDrafts[key] = ""; draw(); }); box.appendChild(rm); }
+    }
+    draw(); return box;
+  }
+
+  // ---- блок «План» в колонке участника (вариант A: свёрнутая полоска) ----
+  function planNode(cid, uid, mine){
+    const key = cid+"/"+uid, mk = planMonth[key] || monthKey(), items = monthItems(cid, uid, mk), done = items.filter(i => i.done).length, open = openPlan.has(key);
+    const box = el("div","plan"+(open?" open":""));
+    const strip = el("button","pstrip"); strip.type="button"; strip.id = "ps-"+key; strip.setAttribute("aria-expanded", String(open));
+    const bar = el("span","pbar"); const bi = el("i"); bi.style.width = (items.length ? done/items.length*100 : 0)+"%"; bar.appendChild(bi);
+    strip.append(el("b",null,"План · "+MONTH_ACC[Number(mk.slice(5))-1]), el("span","muted num", items.length ? done+" из "+items.length : (mine ? "пусто — добавь" : "пусто")), bar, el("span","muted", open?"▴":"▾"));
+    strip.addEventListener("click", () => { open ? openPlan.delete(key) : openPlan.add(key); render(); });
+    box.appendChild(strip); if(!open) return box;
+    const body = el("div","pbody");
+    const pager = el("div","ppager");
+    const go = (n, lbl, txt) => { const b = el("button","btn ghost mini",txt); b.type="button"; b.id = "pg-"+key+"-"+n; b.setAttribute("aria-label",lbl); b.addEventListener("click", () => { planMonth[key] = shiftMonth(mk,n); editItem=null; render(); }); return b; };
+    pager.append(go(-1,"Предыдущий месяц","‹"), el("b",null,monthTitle(mk)), go(1,"Следующий месяц","›"));
+    if(mk!==monthKey()){ const cur = el("button","btn ghost mini","к текущему"); cur.type="button"; cur.addEventListener("click", () => { delete planMonth[key]; render(); }); pager.appendChild(cur); }
+    body.appendChild(pager);
+    const saveItems = (arr) => savePlanMonths(cid, { [mk]: arr });
+    if(!items.length) body.appendChild(el("div","muted pempty", mine ? "В этом месяце пунктов нет. Добавь вручную или перетащи готовый план ниже." : "В этом месяце пунктов нет."));
+    const ul = el("ul","pitems");
+    items.forEach(i => {
+      const li = el("li","pit"+(i.done?" done":""));
+      const cb = mine ? el("button","pcb") : el("span","pcb"); if(mine) cb.id = "pc-"+key+"-"+i.id;
+      if(mine){ cb.type="button"; cb.setAttribute("role","checkbox"); cb.setAttribute("aria-checked", String(!!i.done)); cb.setAttribute("aria-label","Отметить: "+i.title);
+        cb.addEventListener("click", () => saveItems(items.map(x => x.id===i.id ? Object.assign({}, x, { done: x.done ? null : today() }) : x))); }
+      else { cb.setAttribute("role","img"); cb.setAttribute("aria-label", i.done ? "Выполнено" : "Не выполнено"); }
+      li.appendChild(cb);
+      if(mine && editItem===key+"|"+i.id){ li.appendChild(itemEditForm(i, items, saveItems)); }
+      else {
+        const tx = el("div","ptx"); const tt = el("div","ptt"); tt.appendChild(el("b",null,i.title)); if(i.size) tt.appendChild(el("span","muted"," · "+i.size)); tx.appendChild(tt);
+        if(i.why) tx.appendChild(el("div","pnote","Зачем: "+i.why)); if(i.intro) tx.appendChild(el("div","pnote","Вводное: "+i.intro));
+        if(i.note) tx.appendChild(el("div","pnote pmine","Заметка: "+i.note)); if(i.done) tx.appendChild(el("div","pnote","закрыто "+human(i.done)));
+        li.appendChild(tx);
+        if(mine){ const acts = el("div","pacts"); const ed = el("button","btn ghost mini","✎"); ed.type="button"; ed.id = "pb-"+key+"-"+i.id; ed.setAttribute("aria-label","Изменить пункт"); ed.addEventListener("click", () => { editItem = key+"|"+i.id; ["pe-title","pe-size","pe-why","pe-intro","pe-note"].forEach(k => delete drafts[k]); render(); });
+          const rm = el("button","btn ghost mini","✕"); rm.type="button"; rm.setAttribute("aria-label","Удалить пункт"); let armed=false;
+          rm.addEventListener("click", () => { if(!armed){ armed=true; rm.textContent="точно?"; setTimeout(() => { armed=false; rm.textContent="✕"; }, 3000); return; } saveItems(items.filter(x => x.id!==i.id)); });
+          acts.append(ed, rm); li.appendChild(acts); }
+      }
+      ul.appendChild(li);
+    });
+    body.appendChild(ul);
+    if(mine){
+      const f = el("form","padd"); const t = el("input"); t.type="text"; t.id="pAdd"; t.maxLength=200; t.placeholder="Новый пункт: что сделать"; t.value = drafts.pAdd||""; t.addEventListener("input", () => drafts.pAdd=t.value);
+      const sz = el("input"); sz.type="text"; sz.id="pAddSize"; sz.maxLength=40; sz.placeholder="размер (необяз.)"; sz.value = drafts.pAddSize||""; sz.addEventListener("input", () => drafts.pAddSize=sz.value);
+      const b = el("button","btn primary","+ Добавить"); b.type="submit"; f.append(t, sz, b);
+      f.addEventListener("submit", async ev => { ev.preventDefault(); const title = t.value.trim(); if(!title){ t.focus(); return; }
+        if(items.length >= PLAN_MAX_ITEMS){ flash("В месяце уже "+PLAN_MAX_ITEMS+" пунктов — это максимум.", true); return; }
+        const szv = sz.value.trim().slice(0,40), tv = t.value; delete drafts.pAdd; delete drafts.pAddSize; t.value = ""; sz.value = "";
+        b.disabled = true; const ok = await saveItems(items.concat([{ id:rid()+rid().slice(0,2), title:title.slice(0,200), size:szv, why:"", intro:"", note:"", done:null }]));
+        b.disabled = false; if(ok){ setTimeout(() => { const n=$("pAdd"); if(n) n.focus({preventScroll:true}); },0); } else { drafts.pAdd = tv; drafts.pAddSize = szv; t.value = tv; sz.value = szv; } });
+      body.appendChild(f);
+      const tools = el("div","ptools");
+      tools.appendChild(dropZone("Перетащи сюда план (.json / .xml) или нажми", (txt) => importPlan(cid, txt)));
+      const row = el("div","btns left");
+      const c = ch(cid);
+      if(c.planEnabled && typeof c.planTemplate==="string" && c.planTemplate){ const tb = el("button","btn","Взять шаблон челленджа"); tb.type="button"; tb.addEventListener("click", () => importPlan(cid, c.planTemplate)); row.appendChild(tb); }
+      const ex = el("button","btn ghost","Экспорт плана (JSON)"); ex.type="button"; ex.addEventListener("click", () => exportPlan(cid)); row.appendChild(ex);
+      tools.appendChild(row); body.appendChild(tools);
+    } else body.appendChild(el("div","hint","Это план участника — менять его и ставить галочки может только он сам."));
+    box.appendChild(body); return box;
+  }
+  function itemEditForm(i, items, saveItems){
+    const f = el("form","pedit");
+    const mkf = (id, label, val, ta, max) => { const l = el("label",null,label); l.htmlFor=id; const n = ta ? el("textarea") : el("input"); if(!ta) n.type="text"; n.id=id; n.maxLength=max; if(ta) n.rows=2; n.value = drafts[id] ?? val; n.addEventListener("input", () => drafts[id]=n.value); l.appendChild(n); return [l,n]; };
+    const [l1,t] = mkf("pe-title","Название",i.title,false,200), [l2,sz] = mkf("pe-size","Размер",i.size,false,40), [l3,w] = mkf("pe-why","Зачем",i.why,true,400), [l4,it] = mkf("pe-intro","Вводное",i.intro,true,400), [l5,nt] = mkf("pe-note","Моя заметка",i.note,true,600);
+    const bs = el("div","btns left"); const ok = el("button","btn primary","Сохранить"); ok.type="submit"; const cn = el("button","btn ghost","Отмена"); cn.type="button";
+    const close = () => { editItem=null; ["pe-title","pe-size","pe-why","pe-intro","pe-note"].forEach(k => delete drafts[k]); render(); };
+    cn.addEventListener("click", close); bs.append(ok, cn); f.append(l1,l2,l3,l4,l5,bs);
+    f.addEventListener("submit", async ev => { ev.preventDefault(); const title = t.value.trim(); if(!title){ t.focus(); return; } ok.disabled=true;
+      const done = await saveItems(items.map(x => x.id===i.id ? Object.assign({}, x, { title:title.slice(0,200), size:sz.value.trim().slice(0,40), why:w.value.trim().slice(0,400), intro:it.value.trim().slice(0,400), note:nt.value.trim().slice(0,600) }) : x));
+      if(done) close(); else ok.disabled=false; });
+    return f;
+  }
+
   // ---------- settings ----------
   function settingsNode(cid){
     const c = ch(cid); const p = el("section","panel owner-box");
@@ -1122,6 +1464,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const dl = el("label","check"); const dc = el("input"); dc.type="checkbox"; dc.id="sDict"; dc.checked=!!c.dictionary; dl.htmlFor="sDict"; dl.append(dc, document.createTextNode("Общий словарь новых слов"));
     const r1=el("div","row2"); r1.append(l4,l5); const r2=el("div","row2"); r2.append(l6,l7);
     f.append(l1,l2,l3,r1,r2,dl);
+    const fe = fieldsEditor(cid, fieldsOf(cid), () => dc.checked);
+    dc.addEventListener("change", () => { fieldDrafts[cid] = ensureWords(fieldDrafts[cid], dc.checked); fe.redraw(); });
+    f.append(el("h3",null,"Форма отчёта"), el("div","hint","Поля, которые участники заполняют каждый день. Старые отчёты остаются как были."), fe.node);
+    const pl = el("label","check"); const pc = el("input"); pc.type="checkbox"; pc.id="sPlan"; pc.checked=!!c.planEnabled; pl.htmlFor="sPlan"; pl.append(pc, document.createTextNode("План с чек-пойнтами по месяцам (у каждого участника свой)"));
+    const tb = templateBox(cid, c.planTemplate); tb.hidden = !pc.checked; pc.addEventListener("change", () => { tb.hidden = !pc.checked; });
+    f.append(pl, tb);
     const btns = el("div","btns left"); const sv = el("button","btn primary","Сохранить настройки"); sv.type="submit"; btns.appendChild(sv);
     const del = el("button","btn ghost","Удалить челлендж"); del.type="button"; let armed=false;
     del.addEventListener("click", async () => { if(!armed){ armed=true; del.textContent="Удалить навсегда? Нажми ещё раз"; setTimeout(()=>{armed=false; del.textContent="Удалить челлендж";},4000); return; }
@@ -1129,8 +1477,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     btns.appendChild(del); f.appendChild(btns);
     f.addEventListener("submit", async ev => { ev.preventDefault(); sv.disabled=true;
       const ok = await saveChallenge(cid, { title: t.value.trim().slice(0,60) || c.title, topic: tp.value.trim().slice(0,30), description: ds.value.trim().slice(0,400),
-        minutes: clampNum(mn.value,1,600,goalMinOf(cid)), goalDays: clampNum(gd.value,1,1000,goalDaysOf(cid)), startDate: isKey(st.value)?st.value:startOf(cid), penalty: clampNum(pn.value,0,100000,penaltyOf(cid)), dictionary: dc.checked });
-      if(ok){ ["sTitle","sTopic","sDesc","sMin","sGoal","sStart","sPen"].forEach(k=>delete drafts[k]); setStatus("Настройки сохранены."); setTimeout(()=>setStatus(""),2500); }
+        minutes: clampNum(mn.value,1,600,goalMinOf(cid)), goalDays: clampNum(gd.value,1,1000,goalDaysOf(cid)), startDate: isKey(st.value)?st.value:startOf(cid), penalty: clampNum(pn.value,0,100000,penaltyOf(cid)), dictionary: dc.checked, fields: cleanFields(ensureWords(fieldDrafts[cid], dc.checked)), planEnabled: pc.checked, ...(cid in tplDrafts ? { planTemplate: tplDrafts[cid] } : {}) });
+      if(ok){ ["sTitle","sTopic","sDesc","sMin","sGoal","sStart","sPen"].forEach(k=>delete drafts[k]); delete fieldDrafts[cid]; delete tplDrafts[cid]; render(); setStatus("Настройки сохранены."); setTimeout(()=>setStatus(""),2500); }
       sv.disabled=false; });
     p.appendChild(f);
     if(isMember(cid)) p.appendChild(leaveNode(cid, true));
@@ -1188,18 +1536,19 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   const timer = setTimeout(() => { if(!state.loadedChallenges) setStatus("Данные пока не загрузились. Проверь интернет.", true); }, 10000);
   fs.collection("challenges").onSnapshot(snap => {
     const next = {}; snap.docs.forEach(d => { const v=d.data(); if(v && typeof v==="object") next[d.id]=v; });
-    state.challenges = next; state.loadedChallenges = true; clearTimeout(timer); render();
+    state.challenges = next; state.loadedChallenges = true; clearTimeout(timer); scheduleRender();
   }, () => { clearTimeout(timer); setStatus("Связь с базой потеряна. Обнови страницу.", true); });
   auth.getRedirectResult().catch(()=>{});
   auth.onAuthStateChanged(async u => {
+    if((u ? u.uid : null) !== state.me) resetUiState();
     state.signedIn = !!u; state.me = u ? u.uid : null; state.myName = u ? (u.displayName||"") : ""; state.isOwner = !!(u && u.email===OWNER_EMAIL);
-    watchTg(state.me);
     setStatus(""); render();
     if(u){ await migrate(); }
   });
 })();
 
 </script>
+
 <script>if("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));</script>
 </body>
 </html>
