@@ -385,6 +385,17 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 @keyframes appfade{from{opacity:.35}to{opacity:1}}
 #app.fadein{animation:appfade .18s ease-out}
 @media (prefers-reduced-motion: reduce){#app.fadein{animation:none}}
+.float-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:20;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 24px)}
+.float-bar .btn.float-collapse{position:static;transform:none}
+.cols.n5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1300px){.cols.n5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1100px){.cols.n5{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.cols.n5{grid-template-columns:1fr}}
+.cols.n5 .col{padding:12px}
+.cols.n5 .streak .sn b{font-size:20px}
+.cols.n5 .col .cname,.cols.n5 .col .cname-btn{font-size:17px}
+.cols.n5 .col .stats{gap:12px}
+.wrap{max-width:1560px}
 </style>
 </head>
 <body>
@@ -555,6 +566,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   let cardIdx = -1, cardShown = false, cardFor = null, cardMode = "all";
 
   // мгновенно наверх и сразу сворачиваем; короткое проявление вместо долгой прокрутки — колесо мыши ничему не мешает
+  // словарь сворачиваем и остаёмся у его начала
+  function collapseDict(){
+    showAllDict.clear(); render();
+    const d = $("dictPanel"); if(d) window.scrollTo(0, Math.max(0, d.getBoundingClientRect().top + window.scrollY - 12));
+    const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
+  }
   function collapseFeeds(){
     window.scrollTo(0, 0); showAllFeed.clear(); render(); window.scrollTo(0, 0);
     const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
@@ -565,8 +582,11 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const scroll = window.scrollY;
     const app = $("app"); app.replaceChildren();
     if(state.route.view==="challenge") renderChallenge(app, state.route.cid); else renderHome(app);
-    if(state.route.view==="challenge" && showAllFeed.size){   // плавающая кнопка, пока раскрыты старые отчёты
-      const fb = el("button","btn float-collapse","Свернуть отчёты ↑"); fb.type="button"; fb.addEventListener("click", collapseFeeds); app.appendChild(fb); }
+    if(state.route.view==="challenge" && (showAllFeed.size || showAllDict.size)){   // плавающие кнопки, пока что-то раскрыто
+      const bar = el("div","float-bar");
+      if(showAllFeed.size){ const fb = el("button","btn float-collapse","Свернуть отчёты ↑"); fb.type="button"; fb.addEventListener("click", collapseFeeds); bar.appendChild(fb); }
+      if(showAllDict.size){ const fd = el("button","btn float-collapse","Свернуть словарь"); fd.type="button"; fd.addEventListener("click", collapseDict); bar.appendChild(fd); }
+      app.appendChild(bar); }
     if(keep){ const n = $(keep.id); if(n){ if("value" in n && typeof keep.v==="string" && n.tagName!=="BUTTON") n.value = keep.v; n.focus({preventScroll:true}); try{ n.setSelectionRange(keep.s, keep.e); }catch(e){} } }
     window.scrollTo(0, scroll);
   }
@@ -703,7 +723,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!state.signedIn) app.appendChild(el("div","msg","Войди через Google, чтобы вступить и писать отчёты. Смотреть можно и без входа."));
 
     const ids = memberIds(cid);
-    const MAXCOLS = 4;
+    const MAXCOLS = 5;
     const ranked = ids.map(uid => ({ uid, st: statsFor(cid, uid) }))
       .sort((x,y) => (y.uid===state.me) - (x.uid===state.me) || y.st.streak - x.st.streak || y.st.full - x.st.full || ids.indexOf(x.uid) - ids.indexOf(y.uid));
     let shown = ranked.slice(0, MAXCOLS).map(r => r.uid);
@@ -1125,7 +1145,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   }
 
   function dictNode(cid){
-    const v = el("section","panel"); const words = allWords(cid);
+    const v = el("section","panel"); v.id = "dictPanel"; const words = allWords(cid);
     v.appendChild(el("h2",null,"Общий словарь"));
     if(!words.length){ v.appendChild(el("div","empty","Слов пока нет. Добавляй их в поле «Новые слова» в отчёте.")); return v; }
     v.appendChild(trainerNode(cid, words));
@@ -1160,7 +1180,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     });
     tbl.appendChild(tb); wrap.appendChild(tbl); v.appendChild(wrap);
     if(words.length>5){ const b = el("button","btn more", dictAll ? "Свернуть словарь" : "Развернуть словарь полностью ("+words.length+")"); b.type="button";
-      b.addEventListener("click", () => { dictAll ? showAllDict.delete(cid) : showAllDict.add(cid); render(); }); v.appendChild(b); }
+      b.addEventListener("click", () => { if(dictAll) collapseDict(); else { showAllDict.add(cid); render(); } }); v.appendChild(b); }
     v.appendChild(shareNode(cid, words));
     return v;
   }
