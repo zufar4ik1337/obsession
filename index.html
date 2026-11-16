@@ -502,7 +502,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const g = goalMinOf(cid), t = today();
     const s = computeStreak(days, from, t, g, addDays, mins);
     let total=0, full=0, words=0;
-    for(const k in days){ const v=mins(days[k]); total+=v; if(v>=g) full++; words += Array.isArray(days[k].words)?days[k].words.length:0; }
+    for(const k in days){ const v=mins(days[k]); total+=v; if(v>=g) full++; words += normalizeWords(days[k].words).length; }
     const fined = s.breaks.length * penaltyOf(cid);
     return Object.assign(s, { total, full, words, fined, debt: fined, todayMin: mins(days[t]) });
   }
@@ -941,9 +941,42 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     });
     return f;
   }
+  // ---------- разбор строки «слово — перевод» и починка уже записанных слов ----------
+  const SEP_RE = /\s*[—–]\s*|\s+-\s*|\s*-\s+|\s*=\s*|\t/;      // тире, дефис с пробелом хотя бы с одной стороны, =, таб
+  const hasLat = (x) => /[a-z]/i.test(x), hasCyr = (x) => /[а-яё]/i.test(x);
+  const trimPunct = (x) => String(x||"").replace(/^[\s,;.\-–—:]+|[\s,;\-–—:]+$/g,"").trim();
+  const NOTE_RE = /^(разг(оворное|\.)?|сленг|формальн(ое|о)|неформальн(ое|о)|брит(анское|\.)?|амер(иканское|\.)?|устар(евшее|\.)?|ирон(ично|\.)?|груб(о|ое)|офиц(иально|\.)?)$/i;
+  function splitPair(line){
+    const s = String(line||"").trim(); const m = s.match(SEP_RE);
+    if(!m) return { en: trimPunct(s), ru: "" };
+    return { en: trimPunct(s.slice(0, m.index)), ru: trimPunct(s.slice(m.index + m[0].length)) };
+  }
+  // list: [{en, ru}] → [{en, ru, keys}] ; keys — все старые ключи слова (для комментариев)
+  function normalizeWords(list){
+    const out = [];
+    (Array.isArray(list) ? list : []).forEach(w => {
+      if(!w || typeof w!=="object" || !w.en) return;
+      const origKey = wordKey(w.en);
+      let en = String(w.en), ru = String(w.ru||"");
+      if(!ru.trim()){ const p = splitPair(en); en = p.en; ru = p.ru; } else { en = trimPunct(en); ru = trimPunct(ru); }
+      if(!en) return;
+      if(!hasLat(en) && hasLat(ru) && hasCyr(en)){ const t = en; en = ru; ru = t; }          // написали наоборот
+      const prev = out[out.length-1];
+      if(!ru && hasCyr(en) && !hasLat(en) && prev && hasLat(prev.en)){                    // перевод уехал на отдельную строку
+        if(!prev.ru) prev.ru = en;
+        else if(NOTE_RE.test(prev.ru)) prev.ru = en + " (" + prev.ru.toLowerCase() + ")";
+        else prev.ru = prev.ru + ", " + en;
+        if(!prev.keys.includes(origKey)) prev.keys.push(origKey); return;
+      }
+      if(ru && NOTE_RE.test(ru) && !hasLat(ru)){ /* «разговорное» без перевода — оставим как пометку, перевод может прийти следующей строкой */ }
+      out.push({ en: en.slice(0,80), ru: ru.slice(0,160), keys: [origKey] });
+    });
+    out.forEach(w => { const k = wordKey(w.en); if(!w.keys.includes(k)) w.keys.unshift(k); else { w.keys = [k].concat(w.keys.filter(x => x!==k)); } });
+    return out;
+  }
   function parseWords(txt){
-    return txt.split("\n").map(l=>l.trim()).filter(Boolean).slice(0,60).map(l => { const m = l.split(/\s+[—–-]\s+|\s*[—–]\s*|\s*=\s*|\t/);
-      const en=(m[0]||"").trim().slice(0,80), ru=m.slice(1).join(" — ").trim().slice(0,120); return ru?{en,ru}:{en}; }).filter(w=>w.en);
+    const raw = String(txt||"").split("\n").map(l=>l.trim()).filter(Boolean).slice(0,60).map(l => { const p = splitPair(l); return { en:p.en, ru:p.ru }; });
+    return normalizeWords(raw).map(w => w.ru ? { en:w.en, ru:w.ru } : { en:w.en });
   }
   function entryNode(cid, uid, k, r){
     const m = mins(r), g = goalMinOf(cid);
@@ -952,7 +985,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(uid===state.me){ const ed = el("button","btn ghost","Изменить"); ed.type="button"; ed.addEventListener("click", () => { editingReport.add(cid); drafts.fDate=k; clearRepDrafts(); render(); const f=$("fText"); if(f){ f.scrollIntoView({behavior:"smooth",block:"center"}); f.focus({preventScroll:true}); } }); meta.appendChild(ed); }
     e.appendChild(meta);
     if(typeof r.text==="string" && r.text) e.appendChild(el("div","text",r.text));
-    const ws = Array.isArray(r.words)?r.words:[];
+    const ws = normalizeWords(r.words);
     if(ws.length){ const w = el("div","words"); ws.slice(0,60).forEach(x => { if(!x||typeof x!=="object") return; const s=el("span","word"); s.appendChild(el("b",null,String(x.en||""))); if(x.ru) s.appendChild(document.createTextNode(" — "+String(x.ru))); w.appendChild(s); }); e.appendChild(w); }
     const fxs = Array.isArray(r.f) ? r.f : []; const vv = r.v && typeof r.v==="object" ? r.v : {};
     fxs.forEach(fd => { if(!fd || typeof fd!=="object") return; const val = vv[fd.id]; if(val==null || val==="" || (Array.isArray(val) && !val.length)) return;
@@ -986,13 +1019,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   function allWords(cid){
     const out=[]; const seen=new Set();
     memberIds(cid).forEach(uid => { const d=daysOf(cid, uid); Object.keys(d).sort().reverse().forEach(k => {
-      (Array.isArray(d[k].words)?d[k].words:[]).forEach(w => { if(!w||!w.en) return; const key=String(w.en).toLowerCase().trim(); if(seen.has(key)) return; seen.add(key); out.push({en:String(w.en),ru:String(w.ru||""),uid,k}); }); }); });
+      normalizeWords(d[k].words).forEach(w => { const key=w.en.toLowerCase().trim(); if(seen.has(key)){ const o = out.find(x => x.en.toLowerCase().trim()===key); if(o) w.keys.forEach(kk => { if(!o.keys.includes(kk)) o.keys.push(kk); }); return; } seen.add(key); out.push({en:w.en,ru:w.ru,keys:w.keys,uid,k}); }); }); });
     return out.sort((a,b) => b.k.localeCompare(a.k));
   }
   function commentsFor(cid, wk){
     const out=[]; const ms = state.members[cid]||{};
     for(const uid in ms){ const c = ms[uid].comments; const m = c && typeof c==="object" ? c[wk] : null;
-      if(m && typeof m==="object") for(const id in m){ const v=m[id]; if(v && typeof v.text==="string" && v.text) out.push({uid, id, text:v.text.slice(0,300), at:String(v.at||"")}); } }
+      if(m && typeof m==="object") for(const id in m){ const v=m[id]; if(v && typeof v.text==="string" && v.text) out.push({uid, id, wk, text:v.text.slice(0,300), at:String(v.at||"")}); } }
     return out.sort((a,b)=>a.at.localeCompare(b.at));
   }
   const timeAgo = (iso) => { const d=new Date(iso); if(isNaN(d)) return ""; const k=keyOf(d); return (k===today()?"сегодня":human(k))+", "+pad(d.getHours())+":"+pad(d.getMinutes()); };
@@ -1155,7 +1188,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const dictAll = showAllDict.has(cid);
     (dictAll ? words : words.slice(0,5)).forEach(w => {
       const tr = paint(el("tr"), cid, w.uid); const who = el("td"); who.appendChild(paint(el("span","who-chip",nameOf(cid, w.uid)), cid, w.uid));
-      const wk = wordKey(w.en); const list = commentsFor(cid, wk); const open = openComments.has(cid+"|"+wk);
+      const wk = wordKey(w.en); const list = (w.keys||[wk]).flatMap(kk => commentsFor(cid, kk)).sort((a,b)=>a.at.localeCompare(b.at)); const open = openComments.has(cid+"|"+wk);
       const cb = el("button","cbtn"+(list.length?" has":""), list.length ? "💬 "+list.length : "💬"); cb.type="button"; cb.setAttribute("aria-expanded",String(open)); cb.setAttribute("aria-label","Комментарии к слову "+w.en);
       cb.addEventListener("click", () => { open ? openComments.delete(cid+"|"+wk) : openComments.add(cid+"|"+wk); render(); });
       const ctd = el("td"); ctd.appendChild(cb);
@@ -1164,7 +1197,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
         const r2 = paint(el("tr","crow"), cid, w.uid); const td = el("td"); td.colSpan=5; const box = el("div","cbox");
         if(!list.length) box.appendChild(el("div","muted","Пока нет комментариев."));
         list.forEach(c => { const it = el("div","citem"); const hd = el("div","chead2"); hd.append(paint(el("span","who-chip",nameOf(cid,c.uid)),cid,c.uid), el("span","muted num",timeAgo(c.at)));
-          if(c.uid===state.me){ const d = el("button","btn ghost","Удалить"); d.type="button"; d.addEventListener("click", () => saveMember(cid, {comments:{[wk]:{[c.id]: FV.delete()}}})); hd.appendChild(d); }
+          if(c.uid===state.me){ const d = el("button","btn ghost","Удалить"); d.type="button"; d.addEventListener("click", () => saveMember(cid, {comments:{[c.wk]:{[c.id]: FV.delete()}}})); hd.appendChild(d); }
           it.append(hd, el("div","ctext",c.text)); box.appendChild(it); });
         if(isMember(cid)){
           const f = el("form","cform"); const inp = el("input"); inp.type="text"; inp.id="cmt-"+wk; inp.maxLength=300; inp.placeholder="Пример, ассоциация, произношение…"; inp.setAttribute("aria-label","Новый комментарий");
@@ -1250,7 +1283,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   function fieldValueText(rec, f){
     if(!rec) return "";
     if(f.id==="text") return typeof rec.text==="string" ? rec.text : "";
-    if(f.id==="words") return Array.isArray(rec.words) ? rec.words.map(w => w.ru ? w.en+" — "+w.ru : w.en).join("\n") : "";
+    if(f.id==="words") return normalizeWords(rec.words).map(w => w.ru ? w.en+" — "+w.ru : w.en).join("\n");
     const v = rec.v && typeof rec.v==="object" ? rec.v[f.id] : undefined;
     return Array.isArray(v) ? v.join("\n") : (v==null ? "" : String(v));
   }
