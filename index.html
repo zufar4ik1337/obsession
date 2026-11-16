@@ -378,6 +378,8 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 .btn.gno{background:transparent;border:1.5px solid var(--ink)}
 .tr-flash{justify-self:center;font-weight:700;font-size:14px;padding:4px 12px;border-radius:99px;background:var(--ink);color:var(--bg)}
 .tr-flash.bad{background:transparent;color:var(--ink);border:1px dashed var(--ink)}
+.btn.float-collapse{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:20;background:#ebebeb;color:#0f0f0f;border-color:#ebebeb;padding:11px 20px;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.btn.float-collapse:hover{background:#fff}
 </style>
 </head>
 <body>
@@ -547,12 +549,15 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set(), showAllDict = new Set(), editingReport = new Set();
   let cardIdx = -1, cardShown = false, cardFor = null, cardMode = "all";
 
+  function collapseFeeds(){ showAllFeed.clear(); render(); window.scrollTo({ top:0, behavior:"smooth" }); }
   function render(){
     const ae = document.activeElement;
     const keep = ae && ae.id && $("app").contains(ae) ? { id:ae.id, v:ae.value, s:ae.selectionStart, e:ae.selectionEnd } : null;
     const scroll = window.scrollY;
     const app = $("app"); app.replaceChildren();
     if(state.route.view==="challenge") renderChallenge(app, state.route.cid); else renderHome(app);
+    if(state.route.view==="challenge" && showAllFeed.size){   // плавающая кнопка, пока раскрыты старые отчёты
+      const fb = el("button","btn float-collapse","Свернуть отчёты ↑"); fb.type="button"; fb.addEventListener("click", collapseFeeds); app.appendChild(fb); }
     if(keep){ const n = $(keep.id); if(n){ if("value" in n && typeof keep.v==="string" && n.tagName!=="BUTTON") n.value = keep.v; n.focus({preventScroll:true}); try{ n.setSelectionRange(keep.s, keep.e); }catch(e){} } }
     window.scrollTo(0, scroll);
   }
@@ -784,7 +789,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     else {
       const f = el("div","feed"); const key2 = cid+"/"+uid; const all = showAllFeed.has(key2);
       (all ? keys : keys.slice(0,1)).forEach(k => f.appendChild(entryNode(cid, uid, k, days[k]))); col.appendChild(f);
-      if(keys.length>1){ const b = el("button","btn more", all ? "Свернуть отчёты" : "Показать предыдущие отчёты ("+(keys.length-1)+")"); b.type="button"; b.addEventListener("click", () => { all ? showAllFeed.delete(key2) : showAllFeed.add(key2); render(); }); col.appendChild(b); }
+      if(keys.length>1){ const b = el("button","btn more", all ? "Свернуть отчёты" : "Показать предыдущие отчёты ("+(keys.length-1)+")"); b.type="button"; b.addEventListener("click", () => { if(all) collapseFeeds(); else { showAllFeed.add(key2); render(); } }); col.appendChild(b); }
     }
     return col;
   }
