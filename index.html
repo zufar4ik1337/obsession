@@ -380,6 +380,8 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 .tr-flash.bad{background:transparent;color:var(--ink);border:1px dashed var(--ink)}
 .btn.float-collapse{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:20;background:#ebebeb;color:#0f0f0f;border-color:#ebebeb;padding:11px 20px;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .btn.float-collapse:hover{background:#fff}
+.tr-flash{height:28px;line-height:20px;box-sizing:border-box;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;transition:opacity .25s ease}
+.tr-flash.empty{opacity:0;visibility:hidden}
 </style>
 </head>
 <body>
@@ -1085,7 +1087,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     card.appendChild(el("div","hint", tr.dir==="ru2en" ? "Как это по-английски?" : "Как это по-русски?"));
     card.appendChild(el("div","en", question));
     const next = () => { tr.cur=null; tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false; render(); setTimeout(()=>{ const i=$("trAns"); if(i) i.focus({preventScroll:true}); },0); };
-    if(tr.flash){ card.insertBefore(el("div","tr-flash "+(tr.flashOk?"ok":"bad"), tr.flash), card.children[1]||null); }
+    // место под похвалу зарезервировано всегда, поэтому кнопки не прыгают
+    card.insertBefore(el("div","tr-flash "+(tr.flash ? (tr.flashOk?"ok":"bad") : "empty"), tr.flash || "\u00a0"), card.children[1]||null);
     const grade = async (ok) => {
       tr.flash = ok ? nextPraise() : nextOops(); tr.flashOk = ok;
       clearTimeout(tr.flashT); tr.flashT = setTimeout(() => { tr.flash = ""; render(); }, 6000);
