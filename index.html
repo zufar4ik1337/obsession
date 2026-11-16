@@ -1011,6 +1011,23 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     else if(y && (e.key==="2" || e.key==="ArrowRight")){ e.preventDefault(); y.click(); }
     else if(n && (e.key==="1" || e.key==="ArrowLeft")){ e.preventDefault(); n.click(); }
   });
+  // похвала: «мешок» без повторов — фраза вернётся только после того, как прозвучат все остальные
+  const PRAISE = ["Йоу, чувак!","Молоток!","Так держать!","Круче не бывает!","В яблочко!","В точку!","Красава!","Ты крутой 😎","Мощно!","Огонь 🔥",
+    "Чётко!","Без вариантов!","Легенда!","Вот это память!","Хорош!","Ровно!","Как по нотам!","Попал!","Респект!","Жёстко!",
+    "Машина!","Ты в ударе!","Изи!","Шаришь!","Бомба!","Зачёт!","Вот это уровень!","Сто из ста!","Прям носитель!","Нэйтив detected 🇬🇧",
+    "Native speaker вышел на связь","Голова!","Красиво!","Ни единой ошибки!","Умница!","Профи!","Как будто всегда знал!","Так и надо!","Влёт!","Снайпер 🎯",
+    "Чистая победа!","Рука набита!","Мозг прокачан!","Ещё +1 в копилку!","Гений!","Не остановить!","Топ!","Шедевр!","Уверенно!","Это база!",
+    "Well done!","Nailed it!","Awesome!","Spot on!","Brilliant!","You rock!","Killing it!","Perfect!","Smashed it!","Too easy!",
+    "Блестяще!","Великолепно!","Вот так и учат языки!","Слово покорено!","Ты на волне!","Красота!","Космос 🚀","Мастер!","На автомате!","Как с куста!"];
+  const OOPS = ["Ушло в ошибки — повторим","Ничего, в разборе догоним","Запишем в ошибки, вернёмся к нему","Бывает — повторим позже","Не страшно, ещё встретимся",
+    "Отложили на разбор ошибок","В следующий раз точно","Окей, это слово ещё потренируем","Мимо — но запомнится","Отправили на повтор"];
+  const bags = {};
+  function fromBag(name, list){
+    if(!bags[name] || !bags[name].length){ const a = list.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+      if(bags[name+"_last"] && a.length>1 && a[a.length-1]===bags[name+"_last"]) [a[0],a[a.length-1]] = [a[a.length-1],a[0]]; bags[name]=a; }
+    const v = bags[name].pop(); bags[name+"_last"] = v; return v;
+  }
+  const nextPraise = () => fromBag("praise", PRAISE), nextOops = () => fromBag("oops", OOPS);
   function trainerNode(cid, words){
     if(tr.forCid!==cid){ Object.assign(tr, { forCid:cid, cur:null, phase:"ask", answer:"", ok:null }); }
     const me = isMember(cid); if(me) watchProgress(cid);
@@ -1060,9 +1077,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const next = () => { tr.cur=null; tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false; render(); setTimeout(()=>{ const i=$("trAns"); if(i) i.focus({preventScroll:true}); },0); };
     if(tr.flash){ card.insertBefore(el("div","tr-flash "+(tr.flashOk?"ok":"bad"), tr.flash), card.children[1]||null); }
     const grade = async (ok) => {
-      const PRAISE = ["Красава!","Ты крутой 😎","Йоу, в точку!","Так держать!","Мощно!"];
-      tr.flash = ok ? PRAISE[Math.floor(Math.random()*PRAISE.length)] : "Ушло в ошибки — повторим"; tr.flashOk = ok;
-      clearTimeout(tr.flashT); tr.flashT = setTimeout(() => { tr.flash = ""; render(); }, 1600);
+      tr.flash = ok ? nextPraise() : nextOops(); tr.flashOk = ok;
+      clearTimeout(tr.flashT); tr.flashT = setTimeout(() => { tr.flash = ""; render(); }, 6000);
       await recordAnswer(cid, wk, ok); next(); setTimeout(()=>{ const n=$("trShow"); if(n) n.focus({preventScroll:true}); },0);
     };
     if(tr.phase==="ask"){
