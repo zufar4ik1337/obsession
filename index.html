@@ -396,6 +396,13 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 .cols.n5 .col .cname,.cols.n5 .col .cname-btn{font-size:17px}
 .cols.n5 .col .stats{gap:12px}
 .wrap{max-width:1560px}
+/* эмодзи и серия всегда справа сверху карточки */
+.col .ctop{flex-wrap:nowrap;align-items:flex-start}
+.col .ctop > .chead{flex:1 1 0;min-width:0}
+.col .ctop > .streak{flex:0 0 auto;margin-left:auto}
+.cols.n4 .streak,.cols.n5 .streak{gap:6px}
+.cols.n4 .streak .emo,.cols.n5 .streak .emo{width:42px;height:42px;font-size:26px}
+.cols.n4 .streak .sn span,.cols.n5 .streak .sn span{font-size:11px}
 </style>
 </head>
 <body>
