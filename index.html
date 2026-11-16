@@ -426,6 +426,11 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 .cards-today .ct-label{font-weight:600;color:var(--muted)}
 .cards-today .ct-part{color:var(--ink)}
 .cards-today .ct-part b{font-family:var(--display);font-weight:500;font-size:16px}
+.cards-today{display:grid;grid-template-columns:auto 1fr;column-gap:12px;row-gap:2px;align-items:baseline;font-size:13px;margin-top:-4px}
+.cards-today .ct-label{grid-column:1;grid-row:1 / span 2;font-weight:600;color:var(--muted)}
+.cards-today .ct-part{grid-column:2;color:var(--ink);font-weight:700;font-family:var(--body)}
+.cards-today .ct-part b{font-family:var(--body);font-weight:700;font-size:inherit}
+.cards-today > .muted{grid-column:2}
 </style>
 </head>
 <body>
