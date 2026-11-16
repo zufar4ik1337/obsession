@@ -382,6 +382,9 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 .btn.float-collapse:hover{background:#fff}
 .tr-flash{height:28px;line-height:20px;box-sizing:border-box;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;transition:opacity .25s ease}
 .tr-flash.empty{opacity:0;visibility:hidden}
+@keyframes appfade{from{opacity:.35}to{opacity:1}}
+#app.fadein{animation:appfade .18s ease-out}
+@media (prefers-reduced-motion: reduce){#app.fadein{animation:none}}
 </style>
 </head>
 <body>
@@ -551,16 +554,10 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set(), showAllDict = new Set(), editingReport = new Set();
   let cardIdx = -1, cardShown = false, cardFor = null, cardMode = "all";
 
-  // сначала плавно едем наверх, а сворачиваем уже наверху — так страница не прыгает вниз
-  let collapsing = false;
+  // мгновенно наверх и сразу сворачиваем; короткое проявление вместо долгой прокрутки — колесо мыши ничему не мешает
   function collapseFeeds(){
-    if(collapsing) return;
-    const done = () => { collapsing = false; showAllFeed.clear(); render(); window.scrollTo(0, 0); };
-    if(window.scrollY < 4 || matchMedia("(prefers-reduced-motion: reduce)").matches){ window.scrollTo(0, 0); done(); return; }
-    collapsing = true; window.scrollTo({ top:0, behavior:"smooth" });
-    const t0 = Date.now();
-    const wait = () => { if(window.scrollY < 4 || Date.now()-t0 > 1500) done(); else requestAnimationFrame(wait); };
-    requestAnimationFrame(wait);
+    window.scrollTo(0, 0); showAllFeed.clear(); render(); window.scrollTo(0, 0);
+    const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
   }
   function render(){
     const ae = document.activeElement;
