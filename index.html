@@ -549,7 +549,17 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set(), showAllDict = new Set(), editingReport = new Set();
   let cardIdx = -1, cardShown = false, cardFor = null, cardMode = "all";
 
-  function collapseFeeds(){ showAllFeed.clear(); render(); window.scrollTo({ top:0, behavior:"smooth" }); }
+  // сначала плавно едем наверх, а сворачиваем уже наверху — так страница не прыгает вниз
+  let collapsing = false;
+  function collapseFeeds(){
+    if(collapsing) return;
+    const done = () => { collapsing = false; showAllFeed.clear(); render(); window.scrollTo(0, 0); };
+    if(window.scrollY < 4 || matchMedia("(prefers-reduced-motion: reduce)").matches){ window.scrollTo(0, 0); done(); return; }
+    collapsing = true; window.scrollTo({ top:0, behavior:"smooth" });
+    const t0 = Date.now();
+    const wait = () => { if(window.scrollY < 4 || Date.now()-t0 > 1500) done(); else requestAnimationFrame(wait); };
+    requestAnimationFrame(wait);
+  }
   function render(){
     const ae = document.activeElement;
     const keep = ae && ae.id && $("app").contains(ae) ? { id:ae.id, v:ae.value, s:ae.selectionStart, e:ae.selectionEnd } : null;
