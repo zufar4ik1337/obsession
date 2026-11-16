@@ -586,6 +586,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const d = $("dictPanel"); if(d) window.scrollTo(0, Math.max(0, d.getBoundingClientRect().top + window.scrollY - 12));
     const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
   }
+  // «Мой прогресс» сворачиваем и остаёмся у карточек словаря
+  function collapseProg(){
+    [...openPast].forEach(k => { if(k.startsWith("prog/")) openPast.delete(k); }); render();
+    const t = document.querySelector("#dictPanel .trainer") || $("dictPanel"); if(t) window.scrollTo(0, Math.max(0, t.getBoundingClientRect().top + window.scrollY - 12));
+    const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
+  }
   function collapseFeeds(){
     window.scrollTo(0, 0); showAllFeed.clear(); render(); window.scrollTo(0, 0);
     const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
@@ -596,10 +602,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const scroll = window.scrollY;
     const app = $("app"); app.replaceChildren();
     if(state.route.view==="challenge") renderChallenge(app, state.route.cid); else renderHome(app);
-    if(state.route.view==="challenge" && (showAllFeed.size || showAllDict.size)){   // плавающие кнопки, пока что-то раскрыто
+    const progOpen = [...openPast].some(k => k.startsWith("prog/"));
+    if(state.route.view==="challenge" && (showAllFeed.size || showAllDict.size || progOpen)){   // плавающие кнопки, пока что-то раскрыто
       const bar = el("div","float-bar");
       if(showAllFeed.size){ const fb = el("button","btn float-collapse","Свернуть отчёты ↑"); fb.type="button"; fb.addEventListener("click", collapseFeeds); bar.appendChild(fb); }
       if(showAllDict.size){ const fd = el("button","btn float-collapse","Свернуть словарь"); fd.type="button"; fd.addEventListener("click", collapseDict); bar.appendChild(fd); }
+      if(progOpen){ const fp = el("button","btn float-collapse","Свернуть мой прогресс"); fp.type="button"; fp.addEventListener("click", collapseProg); bar.appendChild(fp); }
       app.appendChild(bar); }
     if(keep){ const n = $(keep.id); if(n){ if("value" in n && typeof keep.v==="string" && n.tagName!=="BUTTON") n.value = keep.v; n.focus({preventScroll:true}); try{ n.setSelectionRange(keep.s, keep.e); }catch(e){} } }
     window.scrollTo(0, scroll);
@@ -1180,7 +1188,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const learned = [], learning = [], errs = [];
     usable.forEach(w => { const p = progOf(cid, wordKey(w.en)); if(p.wrong) errs.push(w); else if(isLearned(p)) learned.push(w); else learning.push(w); });
     const d = el("details","myprog"); if(openPast.has("prog/"+cid)) d.open = true;
-    d.addEventListener("toggle", () => { d.open ? openPast.add("prog/"+cid) : openPast.delete("prog/"+cid); });
+    d.addEventListener("toggle", () => { const was = openPast.has("prog/"+cid); d.open ? openPast.add("prog/"+cid) : openPast.delete("prog/"+cid); if(was !== d.open) render(); });
     const sm = el("summary"); sm.append(el("b",null,"Мой прогресс"), el("span","muted"," · видно только тебе · запомнил "+learned.length+" · учу "+learning.length+" · ошибки "+errs.length)); d.appendChild(sm);
     const grid = el("div","prog-grid");
     [["Запомнил",learned],["Ещё учу",learning],["Ошибки",errs]].forEach(([t,list]) => {
