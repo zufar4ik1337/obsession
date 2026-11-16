@@ -416,6 +416,12 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 .vform{display:grid;justify-items:center;gap:2px;min-width:110px;padding:8px 14px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb, var(--bg) 50%, transparent)}
 .vform .vn{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em}
 .vform b{font-family:var(--display);font-size:20px;font-weight:500}
+.settings-details > summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.settings-details > summary::-webkit-details-marker{display:none}
+.settings-details > summary h2{margin:0;display:inline}
+.settings-details > summary::before{content:"▸";font-size:14px;color:var(--muted);transition:transform .15s}
+.settings-details[open] > summary::before{transform:rotate(90deg)}
+.settings-body{display:grid;gap:14px;margin-top:14px}
 </style>
 </head>
 <body>
@@ -1696,8 +1702,11 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
 
   // ---------- settings ----------
   function settingsNode(cid){
-    const c = ch(cid); const p = el("section","panel owner-box");
-    p.appendChild(el("h2",null, "Настройки челленджа"));
+    const c = ch(cid); const outer = el("details","panel owner-box settings-details"); outer.id = "settingsBox";
+    if(openPast.has("settings/"+cid)) outer.open = true;
+    outer.addEventListener("toggle", () => { outer.open ? openPast.add("settings/"+cid) : openPast.delete("settings/"+cid); });
+    const sum = el("summary"); sum.append(el("h2",null,"Настройки челленджа"), el("span","muted"," · название, сроки, штраф, форма отчёта, план")); outer.appendChild(sum);
+    const p = el("div","settings-body"); outer.appendChild(p);
     p.appendChild(el("div","hint", c.createdBy===state.me ? "Ты создатель этого челленджа." : "Ты владелец сайта и можешь менять любой челлендж."));
     const f = el("form");
     const mk = (id, label, type, val, extra) => { const l=el("label",null,label); l.htmlFor=id; const i = type==="textarea" ? el("textarea") : el("input"); if(type!=="textarea") i.type=type; i.id=id; i.value = drafts[id] ?? val; i.addEventListener("input",()=>drafts[id]=i.value); Object.assign(i, extra||{}); l.appendChild(i); return [l,i]; };
@@ -1729,7 +1738,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       sv.disabled=false; });
     p.appendChild(f);
     if(isMember(cid)) p.appendChild(leaveNode(cid, true));
-    return p;
+    return outer;
   }
   function leaveNode(cid, inline){
     const box = el(inline?"div":"section", inline?"btns left":"panel");
