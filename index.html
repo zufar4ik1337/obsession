@@ -410,6 +410,12 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 .cols.n4 .pill,.cols.n5 .pill{white-space:normal}
 /* карточки по центру словаря */
 #dictPanel .trainer .card{justify-self:center;width:100%;max-width:640px;margin-inline:auto}
+.dicttabs{justify-self:start}
+.dicttabs button{font-size:14px;padding:8px 16px}
+.vforms{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.vform{display:grid;justify-items:center;gap:2px;min-width:110px;padding:8px 14px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb, var(--bg) 50%, transparent)}
+.vform .vn{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em}
+.vform b{font-family:var(--display);font-size:20px;font-weight:500}
 </style>
 </head>
 <body>
@@ -1085,7 +1091,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     return recentMem[cid];
   }
   function pushRecent(cid, wk){
-    const r = recentOf(cid).filter(x => x!==wk); r.push(wk); while(r.length>60) r.shift(); recentMem[cid] = r;
+    const r = recentOf(cid).filter(x => x!==wk); r.push(wk); while(r.length>1000) r.shift(); recentMem[cid] = r;
     try{ localStorage.setItem("recent:"+cid, JSON.stringify(r)); }catch(e){}
   }
   document.addEventListener("keydown", (e) => {
@@ -1112,6 +1118,72 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const v = bags[name].pop(); bags[name+"_last"] = v; return v;
   }
   const nextPraise = () => fromBag("praise", PRAISE), nextOops = () => fromBag("oops", OOPS);
+  const repeatGap = (n) => Math.max(0, Math.min(n-1, Math.floor(n*0.8)));
+  // ---------- неправильные глаголы: base | past | participle | перевод ----------
+  const VERBS = [["arise","arose","arisen","возникать"],["awake","awoke","awoken","просыпаться"],["be","was/were","been","быть"],["bear","bore","born/borne","нести; рождать"],["beat","beat","beaten","бить"],["become","became","become","становиться"],["begin","began","begun","начинать"],["bend","bent","bent","гнуть"],["bet","bet","bet","держать пари"],["bind","bound","bound","связывать"],["bite","bit","bitten","кусать"],["bleed","bled","bled","кровоточить"],["blow","blew","blown","дуть"],["break","broke","broken","ломать"],["breed","bred","bred","разводить"],["bring","brought","brought","приносить"],["broadcast","broadcast","broadcast","транслировать"],["build","built","built","строить"],["burn","burnt/burned","burnt/burned","гореть, жечь"],["burst","burst","burst","лопаться"],["buy","bought","bought","покупать"],["catch","caught","caught","ловить"],["choose","chose","chosen","выбирать"],["cling","clung","clung","цепляться"],["come","came","come","приходить"],["cost","cost","cost","стоить"],["creep","crept","crept","ползать"],["cut","cut","cut","резать"],["deal","dealt","dealt","иметь дело"],["dig","dug","dug","копать"],["do","did","done","делать"],["draw","drew","drawn","рисовать; тянуть"],["dream","dreamt/dreamed","dreamt/dreamed","мечтать; видеть сны"],["drink","drank","drunk","пить"],["drive","drove","driven","водить машину"],["eat","ate","eaten","есть"],["fall","fell","fallen","падать"],["feed","fed","fed","кормить"],["feel","felt","felt","чувствовать"],["fight","fought","fought","драться, бороться"],["find","found","found","находить"],["flee","fled","fled","убегать, спасаться"],["fly","flew","flown","летать"],["forbid","forbade","forbidden","запрещать"],["forget","forgot","forgotten","забывать"],["forgive","forgave","forgiven","прощать"],["freeze","froze","frozen","замерзать"],["get","got","got/gotten","получать"],["give","gave","given","давать"],["go","went","gone","идти"],["grind","ground","ground","молоть"],["grow","grew","grown","расти"],["hang","hung","hung","висеть, вешать"],["have","had","had","иметь"],["hear","heard","heard","слышать"],["hide","hid","hidden","прятать"],["hit","hit","hit","ударять"],["hold","held","held","держать"],["hurt","hurt","hurt","причинять боль"],["keep","kept","kept","хранить, держать"],["kneel","knelt","knelt","становиться на колени"],["know","knew","known","знать"],["lay","laid","laid","класть"],["lead","led","led","вести"],["lean","leant/leaned","leant/leaned","опираться"],["learn","learnt/learned","learnt/learned","учить"],["leave","left","left","покидать, оставлять"],["lend","lent","lent","одалживать"],["let","let","let","позволять"],["lie","lay","lain","лежать"],["light","lit","lit","зажигать"],["lose","lost","lost","терять"],["make","made","made","делать, создавать"],["mean","meant","meant","значить"],["meet","met","met","встречать"],["mistake","mistook","mistaken","ошибаться"],["overcome","overcame","overcome","преодолевать"],["pay","paid","paid","платить"],["prove","proved","proven/proved","доказывать"],["put","put","put","класть"],["quit","quit","quit","бросать, уходить"],["read","read","read","читать"],["ride","rode","ridden","ездить верхом"],["ring","rang","rung","звонить"],["rise","rose","risen","подниматься"],["run","ran","run","бежать"],["say","said","said","сказать"],["see","saw","seen","видеть"],["seek","sought","sought","искать"],["sell","sold","sold","продавать"],["send","sent","sent","посылать"],["set","set","set","устанавливать"],["shake","shook","shaken","трясти"],["shine","shone","shone","сиять"],["shoot","shot","shot","стрелять"],["show","showed","shown","показывать"],["shrink","shrank","shrunk","сжиматься"],["shut","shut","shut","закрывать"],["sing","sang","sung","петь"],["sink","sank","sunk","тонуть"],["sit","sat","sat","сидеть"],["sleep","slept","slept","спать"],["slide","slid","slid","скользить"],["smell","smelt/smelled","smelt/smelled","пахнуть, нюхать"],["speak","spoke","spoken","говорить"],["speed","sped","sped","мчаться"],["spell","spelt/spelled","spelt/spelled","писать по буквам"],["spend","spent","spent","тратить, проводить время"],["spill","spilt/spilled","spilt/spilled","проливать"],["spin","spun","spun","вращать"],["spit","spat","spat","плевать"],["split","split","split","раскалывать"],["spoil","spoilt/spoiled","spoilt/spoiled","портить"],["spread","spread","spread","распространять"],["spring","sprang","sprung","прыгать"],["stand","stood","stood","стоять"],["steal","stole","stolen","воровать"],["stick","stuck","stuck","приклеивать"],["sting","stung","stung","жалить"],["stink","stank","stunk","вонять"],["strike","struck","struck","ударять, бастовать"],["strive","strove","striven","стремиться"],["swear","swore","sworn","клясться, ругаться"],["sweep","swept","swept","мести"],["swim","swam","swum","плавать"],["swing","swung","swung","качаться"],["take","took","taken","брать"],["teach","taught","taught","учить, преподавать"],["tear","tore","torn","рвать"],["tell","told","told","рассказывать"],["think","thought","thought","думать"],["throw","threw","thrown","бросать"],["understand","understood","understood","понимать"],["undertake","undertook","undertaken","предпринимать"],["upset","upset","upset","расстраивать"],["wake","woke","woken","просыпаться, будить"],["wear","wore","worn","носить (одежду)"],["weep","wept","wept","плакать"],["win","won","won","побеждать"],["wind","wound","wound","заводить; извиваться"],["withdraw","withdrew","withdrawn","снимать (деньги); отступать"],["write","wrote","written","писать"]].map(([b,p,pp,ru]) => ({ b, p:p.replace(/\//g," / "), pp:pp.replace(/\//g," / "), ru, key:"v:"+b }));
+  const vt = { mode:"all", dir:"ru", cur:null, phase:"ask", flash:"", flashOk:true, flashT:null };
+  let dictTab = "words";
+  function verbsNode(cid){
+    const me = isMember(cid); if(me) watchProgress("verbs");
+    const errors = me ? VERBS.filter(v => progOf("verbs", v.key).wrong) : [];
+    if(vt.mode==="errors" && !errors.length && vt.phase==="ask") vt.mode = "all";
+    const deck = vt.mode==="errors" ? errors : VERBS;
+    const box = el("div","trainer");
+    if(me && errors.length && vt.mode!=="errors"){
+      const bn = el("button","review-banner"); bn.type="button";
+      bn.append(el("b",null,"Разбор ошибок: "+errors.length+" "+plural(errors.length,"глагол","глагола","глаголов")), el("span",null,"Повторить →"));
+      bn.addEventListener("click", () => { vt.mode="errors"; vt.cur=null; vt.phase="ask"; render(); }); box.appendChild(bn);
+    }
+    const card = el("div","card");
+    const segs = el("div","segs");
+    const seg = el("div","seg");
+    [["all","Все · "+VERBS.length],["errors","Ошибки · "+errors.length]].forEach(([m,label]) => { if(m!=="all" && !me) return;
+      const b = el("button",null,label); b.type="button"; b.setAttribute("aria-selected", String(vt.mode===m));
+      b.addEventListener("click", () => { if(vt.mode!==m){ vt.mode=m; vt.cur=null; vt.phase="ask"; render(); } }); seg.appendChild(b); });
+    const seg2 = el("div","seg");
+    [["ru","RU → 3 формы"],["en","EN → 2 и 3 формы"]].forEach(([d,label]) => { const b = el("button",null,label); b.type="button"; b.setAttribute("aria-selected", String(vt.dir===d));
+      b.addEventListener("click", () => { if(vt.dir!==d){ vt.dir=d; vt.phase="ask"; render(); } }); seg2.appendChild(b); });
+    segs.append(seg, seg2); card.appendChild(segs);
+    card.appendChild(el("div","tr-flash "+(vt.flash ? (vt.flashOk?"ok":"bad") : "empty"), vt.flash || " "));
+    if(!deck.length){ card.appendChild(el("div","muted","Ошибок нет — всё разобрано.")); box.appendChild(card); if(me) box.appendChild(myProgressNode("verbs", VERBS.map(v => ({ en:v.b+" — "+v.p+" — "+v.pp, ru:v.ru, key:v.key })))); return box; }
+    let v = deck.find(x => x.key===vt.cur);
+    if(!v){
+      const block = new Set(recentOf("verbs").slice(-repeatGap(deck.length)));
+      const fresh = deck.filter(x => !block.has(x.key));
+      const unlearned = fresh.filter(x => !isLearned(progOf("verbs", x.key)));
+      const src = unlearned.length ? unlearned : (fresh.length ? fresh : deck);
+      v = src[Math.floor(Math.random()*src.length)]; pushRecent("verbs", v.key); vt.cur = v.key; vt.phase = "ask";
+    }
+    const p = progOf("verbs", v.key);
+    card.appendChild(el("div","hint", vt.dir==="ru" ? "Как это по-английски? Назови все 3 формы" : "Назови 2-ю и 3-ю формы"));
+    card.appendChild(el("div","en", vt.dir==="ru" ? v.ru : v.b));
+    const next = () => { vt.cur=null; vt.phase="ask"; render(); setTimeout(()=>{ const n=$("trShow"); if(n) n.focus({preventScroll:true}); },0); };
+    const grade = async (ok) => {
+      vt.flash = ok ? nextPraise() : nextOops(); vt.flashOk = ok;
+      clearTimeout(vt.flashT); vt.flashT = setTimeout(() => { vt.flash = ""; render(); }, 6000);
+      await recordAnswer("verbs", v.key, ok); next();
+    };
+    if(vt.phase==="ask"){
+      card.appendChild(el("div","tr-back","?"));
+      const row = el("div","btns"); const sh = el("button","btn primary big","Показать ответ"); sh.type="button"; sh.id="trShow";
+      sh.addEventListener("click", () => { vt.phase="shown"; render(); setTimeout(()=>{ const n=$("trYes"); if(n) n.focus({preventScroll:true}); },0); });
+      row.appendChild(sh); card.appendChild(row);
+    } else {
+      const forms = el("div","vforms");
+      (vt.dir==="ru" ? [["I",v.b],["II",v.p],["III",v.pp]] : [["II",v.p],["III",v.pp]]).forEach(([n,f]) => { const c = el("div","vform"); c.append(el("span","vn",n), el("b",null,f)); forms.appendChild(c); });
+      card.appendChild(forms);
+      if(vt.dir==="en") card.appendChild(el("div","muted", v.ru));
+      const row = el("div","btns grade");
+      const no = el("button","btn gno","✗ Не угадал"); no.type="button"; no.id="trNo"; no.addEventListener("click", () => grade(false));
+      const yes = el("button","btn primary gyes","✓ Угадал"); yes.type="button"; yes.id="trYes"; yes.addEventListener("click", () => grade(true));
+      row.append(no, yes); card.appendChild(row);
+      if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
+    }
+    if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "в разборе ошибок" : (p.s ? "верно подряд: "+p.s+" из "+LEARN_AT : "новый глагол"); card.appendChild(el("div","hint", st)); }
+    box.appendChild(card);
+    if(me) box.appendChild(myProgressNode("verbs", VERBS.map(x => ({ en:x.b+" — "+x.p+" — "+x.pp, ru:x.ru, key:x.key }))));
+    return box;
+  }
   function trainerNode(cid, words){
     if(tr.forCid!==cid){ Object.assign(tr, { forCid:cid, cur:null, phase:"ask", answer:"", ok:null }); }
     const me = isMember(cid); if(me) watchProgress(cid);
@@ -1144,8 +1216,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     }
     let w = deck.find(x => wordKey(x.en)===tr.cur);
     if(!w){
-      // слово не повторяется, пока не пройдёт 30 других (или вся колода, если она меньше)
-      const recent = recentOf(cid); const gap = Math.min(30, Math.max(0, deck.length-1));
+      // слово не повторяется, пока не пройдут 80% колоды
+      const recent = recentOf(cid); const gap = repeatGap(deck.length);
       const block = new Set(recent.slice(-gap));
       const fresh = deck.filter(x => !block.has(wordKey(x.en)));
       const unlearned = fresh.filter(x => !isLearned(progOf(cid, wordKey(x.en))));
@@ -1186,7 +1258,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   }
   function myProgressNode(cid, usable){
     const learned = [], learning = [], errs = [];
-    usable.forEach(w => { const p = progOf(cid, wordKey(w.en)); if(p.wrong) errs.push(w); else if(isLearned(p)) learned.push(w); else learning.push(w); });
+    usable.forEach(w => { const p = progOf(cid, w.key || wordKey(w.en)); if(p.wrong) errs.push(w); else if(isLearned(p)) learned.push(w); else learning.push(w); });
     const d = el("details","myprog"); if(openPast.has("prog/"+cid)) d.open = true;
     d.addEventListener("toggle", () => { const was = openPast.has("prog/"+cid); d.open ? openPast.add("prog/"+cid) : openPast.delete("prog/"+cid); if(was !== d.open) render(); });
     const sm = el("summary"); sm.append(el("b",null,"Мой прогресс"), el("span","muted"," · видно только тебе · запомнил "+learned.length+" · учу "+learning.length+" · ошибки "+errs.length)); d.appendChild(sm);
@@ -1202,8 +1274,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   function dictNode(cid){
     const v = el("section","panel"); v.id = "dictPanel"; const words = allWords(cid);
     v.appendChild(el("h2",null,"Общий словарь"));
-    if(!words.length){ v.appendChild(el("div","empty","Слов пока нет. Добавляй их в поле «Новые слова» в отчёте.")); return v; }
-    v.appendChild(trainerNode(cid, words));
+    const tabs = el("div","seg dicttabs");
+    [["words","Слова из словаря"],["verbs","Неправильные глаголы"]].forEach(([t,label]) => { const b = el("button",null,label); b.type="button"; b.setAttribute("aria-selected", String(dictTab===t));
+      b.addEventListener("click", () => { if(dictTab!==t){ dictTab=t; render(); } }); tabs.appendChild(b); });
+    v.appendChild(tabs);
+    if(dictTab==="verbs"){ v.appendChild(verbsNode(cid)); if(!words.length) return v; }
+    else if(!words.length){ v.appendChild(el("div","empty","Слов пока нет. Добавляй их в поле «Новые слова» в отчёте.")); return v; }
+    else v.appendChild(trainerNode(cid, words));
     const wrap = el("div","tablewrap"); const tbl = el("table","dict"); const hr = el("tr");
     ["Слово","Перевод","Кто добавил","Когда",""].forEach(h=>hr.appendChild(el("th",null,h))); const th=el("thead"); th.appendChild(hr); tbl.appendChild(th);
     const tb = el("tbody");
