@@ -422,6 +422,10 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 .settings-details > summary::before{content:"▸";font-size:14px;color:var(--muted);transition:transform .15s}
 .settings-details[open] > summary::before{transform:rotate(90deg)}
 .settings-body{display:grid;gap:14px;margin-top:14px}
+.cards-today{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;font-size:13px;color:var(--muted);margin-top:-4px}
+.cards-today .ct-label{font-weight:600;color:var(--muted)}
+.cards-today .ct-part{color:var(--ink)}
+.cards-today .ct-part b{font-family:var(--display);font-weight:500;font-size:16px}
 </style>
 </head>
 <body>
@@ -840,6 +844,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const stats = el("div","stats");
     [["лучшая серия",st.best],["дней",st.full],["минут",st.total]].concat(ch(cid).dictionary?[["слов",st.words]]:[]).forEach(([l,v]) => { const d=el("div"); d.appendChild(el("b","num",String(v))); d.appendChild(document.createTextNode(l)); stats.appendChild(d); });
     col.appendChild(stats);
+    if(ch(cid).dictionary) col.appendChild(cardsNode(cid, uid));
     if(mine){
       const hasToday = !!daysOf(cid, uid)[today()];
       if(!hasToday || editingReport.has(cid)) col.appendChild(reportForm(cid));
@@ -1167,7 +1172,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const grade = async (ok) => {
       vt.flash = ok ? nextPraise() : nextOops(); vt.flashOk = ok;
       clearTimeout(vt.flashT); vt.flashT = setTimeout(() => { vt.flash = ""; render(); }, 6000);
-      await recordAnswer("verbs", v.key, ok); next();
+      bumpCards(cid, "v", ok); await recordAnswer("verbs", v.key, ok); next();
     };
     if(vt.phase==="ask"){
       card.appendChild(el("div","tr-back","?"));
@@ -1188,6 +1193,25 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "в разборе ошибок" : (p.s ? "верно подряд: "+p.s+" из "+LEARN_AT : "новый глагол"); card.appendChild(el("div","hint", st)); }
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode("verbs", VERBS.map(x => ({ en:x.b+" — "+x.p+" — "+x.pp, ru:x.ru, key:x.key }))));
+    return box;
+  }
+  // ---------- счётчик карточек за день: members/{uid}.cards["ГГГГ-ММ-ДД"] = { w:{ok,all}, v:{ok,all} } ----------
+  function bumpCards(cid, kind, ok){
+    if(!isMember(cid) || !FV || !FV.increment) return;
+    saveMember(cid, { cards: { [today()]: { [kind]: { ok: FV.increment(ok?1:0), all: FV.increment(1) } } } });
+  }
+  function cardsToday(cid, uid){
+    const m = memberOf(cid, uid) || {}; const d = m.cards && typeof m.cards==="object" ? m.cards[today()] : null;
+    const g = (k) => { const x = d && d[k] && typeof d[k]==="object" ? d[k] : {}; return { ok: Math.max(0, Number(x.ok)||0), all: Math.max(0, Number(x.all)||0) }; };
+    return { w: g("w"), v: g("v") };
+  }
+  function cardsNode(cid, uid){
+    const t = cardsToday(cid, uid); const box = el("div","cards-today");
+    box.appendChild(el("span","ct-label","Сегодня в карточках"));
+    if(!t.w.all && !t.v.all){ box.appendChild(el("span","muted","ещё не было")); return box; }
+    const part = (x, one, few, many) => { const s = el("span","ct-part"); s.append(el("b","num",String(x.ok)), document.createTextNode(" из "+x.all+" "+plural(x.all,one,few,many))); s.title = "угадано из пройденных"; return s; };
+    if(t.w.all) box.appendChild(part(t.w,"слова","слов","слов"));
+    if(t.v.all) box.appendChild(part(t.v,"глагола","глаголов","глаголов"));
     return box;
   }
   function trainerNode(cid, words){
@@ -1242,7 +1266,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const grade = async (ok) => {
       tr.flash = ok ? nextPraise() : nextOops(); tr.flashOk = ok;
       clearTimeout(tr.flashT); tr.flashT = setTimeout(() => { tr.flash = ""; render(); }, 6000);
-      await recordAnswer(cid, wk, ok); next(); setTimeout(()=>{ const n=$("trShow"); if(n) n.focus({preventScroll:true}); },0);
+      bumpCards(cid, "w", ok); await recordAnswer(cid, wk, ok); next(); setTimeout(()=>{ const n=$("trShow"); if(n) n.focus({preventScroll:true}); },0);
     };
     if(tr.phase==="ask"){
       card.appendChild(el("div","tr-back","?"));
