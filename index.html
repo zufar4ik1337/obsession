@@ -359,6 +359,17 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 @media (max-width:560px){.frow2{grid-template-columns:1fr 1fr;}.padd{grid-template-columns:1fr}}
 .tplpre{margin:6px 0;padding:8px;background:var(--bg);border-radius:8px;font:11px/1.4 monospace;overflow:auto;max-height:200px;white-space:pre}
 #status{position:sticky;top:8px;z-index:60}
+.pbuild{display:grid;gap:10px}
+.pb-title{font-weight:600;font-size:14px}
+.pb-month{display:grid;gap:6px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:color-mix(in srgb, var(--bg) 45%, transparent)}
+.pb-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pb-head b{font-family:var(--display);font-size:15px;margin-right:auto}
+.pb-head input[type=month]{width:auto;padding:6px 8px}
+.pb-item{display:grid;grid-template-columns:minmax(0,1fr) 130px auto;gap:6px;align-items:center}
+@media (max-width:520px){.pb-item{grid-template-columns:minmax(0,1fr) auto}.pb-item .pb-size{grid-column:1}}
+.pb-item input{padding:8px 10px}
+.pb-month .btn.add{justify-self:start}
+.pb-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 </style>
 </head>
 <body>
@@ -1358,19 +1369,79 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     d.append(ta, ok); wrap.appendChild(d); wrap.appendChild(templateHelp());
     return wrap;
   }
+  // ---- конструктор шаблона плана прямо на сайте ----
+  const builders = {};   // key -> [{id:"ГГГГ-ММ", items:[{title,size,why}]}]
+  const nextMonth = (mk) => { const [y,m] = mk.split("-").map(Number); const d = new Date(y, m, 1); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); };
+  const STARTERS = [
+    ["empty","Пустой месяц", () => [{ title:"" }]],
+    ["weeks","По неделям", () => [1,2,3,4].map(n => ({ title:"Неделя "+n+": ", size:"7 дней" }))],
+    ["books","Книги", () => [{ title:"Книга 1: ", size:"до 15 числа" }, { title:"Книга 2: ", size:"до конца месяца" }]],
+    ["lang","Язык", () => [{ title:"Выучить 100 новых слов", size:"≈4 в день" }, { title:"Посмотреть сериал/фильм в оригинале", size:"4 серии" }, { title:"Тема грамматики: ", size:"1 тема" }, { title:"Разговорная практика", size:"4 раза" }]]
+  ];
+  function builderFrom(raw){
+    if(!raw) return [];
+    try{ const p = normalizePlan(JSON.parse(raw)); return Object.keys(p.months).sort().map(k => ({ id:k, items: p.months[k].map(i => ({ title:i.title, size:i.size||"", why:i.why||"" })) })); }catch(e){ return []; }
+  }
+  function builderNode(key, onChange){
+    const months = builders[key];
+    const box = el("div","pbuild");
+    const save = () => {
+      const clean = months.map(m => ({ id:m.id, items: m.items.filter(i => i.title.trim()).map(i => ({ title:i.title.trim().slice(0,200), size:i.size.trim().slice(0,40), why:i.why.trim().slice(0,400) })) })).filter(m => m.items.length);
+      tplDrafts[key] = clean.length ? JSON.stringify({ format:"obsession-plan", version:1, months: clean }) : "";
+      onChange();
+    };
+    const redraw = () => { save(); const fresh = builderNode(key, onChange); box.replaceWith(fresh); };
+    if(!months.length) box.appendChild(el("div","hint","Пока пусто. Добавь месяц и впиши пункты — или начни с заготовки."));
+    months.forEach((m, mi) => {
+      const sec = el("div","pb-month");
+      const head = el("div","pb-head");
+      const mIn = el("input"); mIn.type="month"; mIn.value = m.id; mIn.id = "pbm-"+key+"-"+mi; mIn.setAttribute("aria-label","Месяц");
+      mIn.addEventListener("change", () => { if(MONTH_ID.test(mIn.value)){ m.id = mIn.value; save(); } });
+      const rmM = el("button","btn ghost mini","✕"); rmM.type="button"; rmM.setAttribute("aria-label","Удалить месяц "+monthTitle(m.id)); rmM.addEventListener("click", () => { months.splice(mi,1); redraw(); });
+      head.append(el("b",null,monthTitle(m.id)), mIn, rmM); sec.appendChild(head);
+      m.items.forEach((it, ii) => {
+        const row = el("div","pb-item");
+        const t = el("input"); t.type="text"; t.maxLength=200; t.placeholder="Пункт: что сделать"; t.value = it.title; t.id="pbt-"+key+"-"+mi+"-"+ii; t.setAttribute("aria-label","Пункт "+(ii+1));
+        t.addEventListener("input", () => { it.title = t.value; save(); });
+        t.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); m.items.splice(ii+1,0,{title:"",size:"",why:""}); redraw(); setTimeout(()=>{ const n=document.getElementById("pbt-"+key+"-"+mi+"-"+(ii+1)); if(n) n.focus(); },0); } });
+        const sz = el("input"); sz.type="text"; sz.maxLength=40; sz.placeholder="объём / срок"; sz.value = it.size; sz.className="pb-size"; sz.setAttribute("aria-label","Объём или срок");
+        sz.addEventListener("input", () => { it.size = sz.value; save(); });
+        const rm = el("button","btn ghost mini","✕"); rm.type="button"; rm.setAttribute("aria-label","Убрать пункт"); rm.addEventListener("click", () => { m.items.splice(ii,1); redraw(); });
+        row.append(t, sz, rm); sec.appendChild(row);
+      });
+      const addI = el("button","btn ghost mini add","+ пункт"); addI.type="button";
+      addI.addEventListener("click", () => { m.items.push({title:"",size:"",why:""}); redraw(); setTimeout(()=>{ const n=document.getElementById("pbt-"+key+"-"+mi+"-"+(m.items.length-1)); if(n) n.focus(); },0); });
+      sec.appendChild(addI); box.appendChild(sec);
+    });
+    const bar = el("div","pb-bar");
+    bar.appendChild(el("span","hint","Добавить месяц:"));
+    STARTERS.forEach(([id,label,gen]) => { const b = el("button","chip","+ "+label); b.type="button";
+      b.addEventListener("click", () => { const last = months.length ? months[months.length-1].id : null; const mk = last ? nextMonth(last) : monthKey();
+        months.push({ id:mk, items: gen().map(x => Object.assign({ size:"", why:"" }, x)) }); redraw(); }); bar.appendChild(b); });
+    if(months.length){ const cp = el("button","chip","+ Копия последнего"); cp.type="button";
+      cp.addEventListener("click", () => { const last = months[months.length-1]; months.push({ id: nextMonth(last.id), items: last.items.map(i => ({ title:i.title, size:i.size, why:i.why })) }); redraw(); }); bar.appendChild(cp); }
+    box.appendChild(bar);
+    return box;
+  }
+
   function templateBox(key, current){
     const box = el("div","tplbox");
     const cur = () => key in tplDrafts ? tplDrafts[key] : (current||"");
     function draw(){
       box.replaceChildren(); const raw = cur(); let info = "Шаблона нет — участники начинают с пустого плана.";
       if(raw){ try{ const p = normalizePlan(JSON.parse(raw)); info = "Шаблон: "+planWord(p.count)+", месяцев: "+p.monthsN+". Новые участники получат копию."; }catch(e){ info = "Шаблон повреждён — загрузи заново."; } }
-      box.appendChild(el("div","hint",info));
-      box.appendChild(dropZone("Перетащи шаблон .json / .xml или нажми, чтобы выбрать", async (t) => {
+      const infoEl = el("div","hint",info); box.appendChild(infoEl);
+      if(!builders[key]) builders[key] = builderFrom(raw);
+      box.appendChild(el("div","pb-title","Собрать план на сайте"));
+      box.appendChild(builderNode(key, () => { const r = cur(); let t = "Шаблона нет — участники начинают с пустого плана.";
+        if(r){ try{ const p = normalizePlan(JSON.parse(r)); t = "Шаблон: "+planWord(p.count)+", месяцев: "+p.monthsN+". Новые участники получат копию. Не забудь сохранить."; }catch(e){} } infoEl.textContent = t; }));
+      const fileBox = el("details","pastebox"); fileBox.appendChild(el("summary",null,"или загрузить готовый файл JSON / XML")); box.appendChild(fileBox);
+      fileBox.appendChild(dropZone("Перетащи шаблон .json / .xml или нажми, чтобы выбрать", async (t) => {
         const p = parsePlanText(t); const out = JSON.stringify({ format:"obsession-plan", version:1, months: Object.keys(p.months).sort().map(k => ({ id:k, items: p.months[k].map(({title,size,why,intro}) => ({title,size,why,intro})) })) });
         if(out.length > TPL_MAX) throw new Error("Шаблон слишком большой (больше 200 КБ).");
-        tplDrafts[key] = out; draw(); flash("Шаблон принят: "+planWord(p.count)+(p.skipped.length ? ", пропущено строк: "+p.skipped.length+" ("+p.skipped.slice(0,2).join("; ")+")" : "")+". Не забудь сохранить.");
+        tplDrafts[key] = out; builders[key] = builderFrom(out); draw(); flash("Шаблон принят: "+planWord(p.count)+(p.skipped.length ? ", пропущено строк: "+p.skipped.length+" ("+p.skipped.slice(0,2).join("; ")+")" : "")+". Не забудь сохранить.");
       }));
-      if(raw){ const rm = el("button","btn ghost","Убрать шаблон"); rm.type="button"; rm.addEventListener("click", () => { tplDrafts[key] = ""; draw(); }); box.appendChild(rm); }
+      if(raw){ const rm = el("button","btn ghost","Очистить шаблон"); rm.type="button"; rm.addEventListener("click", () => { tplDrafts[key] = ""; builders[key] = []; draw(); }); box.appendChild(rm); }
     }
     draw(); return box;
   }
