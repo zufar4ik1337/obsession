@@ -370,6 +370,14 @@ button.pcb{cursor:pointer}button.pcb:focus-visible{outline:3px solid var(--accen
 .pb-item input{padding:8px 10px}
 .pb-month .btn.add{justify-self:start}
 .pb-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tr-back{font-family:var(--display);font-size:28px;color:var(--muted);letter-spacing:.2em}
+.btn.big{padding:12px 26px;font-size:16px}
+.tr-target.big{font-family:var(--display);font-size:26px;font-weight:500}
+.btns.grade{gap:10px}
+.btns.grade .btn{min-width:150px;padding:12px 18px;font-size:16px}
+.btn.gno{background:transparent;border:1.5px solid var(--ink)}
+.tr-flash{justify-self:center;font-weight:700;font-size:14px;padding:4px 12px;border-radius:99px;background:var(--ink);color:var(--bg)}
+.tr-flash.bad{background:transparent;color:var(--ink);border:1px dashed var(--ink)}
 </style>
 </head>
 <body>
@@ -991,6 +999,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const r = recentOf(cid).filter(x => x!==wk); r.push(wk); while(r.length>60) r.shift(); recentMem[cid] = r;
     try{ localStorage.setItem("recent:"+cid, JSON.stringify(r)); }catch(e){}
   }
+  document.addEventListener("keydown", (e) => {
+    const t = e.target; if(t && (t.tagName==="INPUT" || t.tagName==="TEXTAREA" || t.isContentEditable)) return;
+    const sh = $("trShow"), y = $("trYes"), n = $("trNo");
+    if(sh && (e.key===" " || e.key==="Enter")){ e.preventDefault(); sh.click(); }
+    else if(y && (e.key==="2" || e.key==="ArrowRight")){ e.preventDefault(); y.click(); }
+    else if(n && (e.key==="1" || e.key==="ArrowLeft")){ e.preventDefault(); n.click(); }
+  });
   function trainerNode(cid, words){
     if(tr.forCid!==cid){ Object.assign(tr, { forCid:cid, cur:null, phase:"ask", answer:"", ok:null }); }
     const me = isMember(cid); if(me) watchProgress(cid);
@@ -1038,47 +1053,25 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     card.appendChild(el("div","hint", tr.dir==="ru2en" ? "Как это по-английски?" : "Как это по-русски?"));
     card.appendChild(el("div","en", question));
     const next = () => { tr.cur=null; tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false; render(); setTimeout(()=>{ const i=$("trAns"); if(i) i.focus({preventScroll:true}); },0); };
+    if(tr.flash){ card.insertBefore(el("div","tr-flash "+(tr.flashOk?"ok":"bad"), tr.flash), card.children[1]||null); }
+    const grade = async (ok) => {
+      const PRAISE = ["Красава!","Ты крутой 😎","Йоу, в точку!","Так держать!","Мощно!"];
+      tr.flash = ok ? PRAISE[Math.floor(Math.random()*PRAISE.length)] : "Ушло в ошибки — повторим"; tr.flashOk = ok;
+      clearTimeout(tr.flashT); tr.flashT = setTimeout(() => { tr.flash = ""; render(); }, 1600);
+      await recordAnswer(cid, wk, ok); next(); setTimeout(()=>{ const n=$("trShow"); if(n) n.focus({preventScroll:true}); },0);
+    };
     if(tr.phase==="ask"){
-      const f = el("form","tr-form"); const inp = el("input"); inp.type="text"; inp.id="trAns"; inp.autocomplete="off"; inp.setAttribute("autocapitalize","off"); inp.setAttribute("spellcheck","false");
-      inp.placeholder = tr.dir==="ru2en" ? "по-английски" : "по-русски"; inp.value = tr.answer; inp.setAttribute("aria-label","Твой ответ");
-      inp.addEventListener("input", () => tr.answer = inp.value);
-      const chk = el("button","btn primary","Проверить"); chk.type="submit";
-      const idk = el("button","btn","Не знаю"); idk.type="button";
-      f.addEventListener("submit", async ev => { ev.preventDefault(); if(!inp.value.trim()){ inp.focus(); return; }
-        tr.answer = inp.value; tr.ok = isCorrect(inp.value, target, tr.dir); tr.phase="result"; render(); await recordAnswer(cid, wk, tr.ok); setTimeout(()=>{ const n=$("trNext"); if(n) n.focus({preventScroll:true}); },0); });
-      idk.addEventListener("click", async () => { tr.answer=""; tr.ok=false; tr.phase="result"; render(); await recordAnswer(cid, wk, false); setTimeout(()=>{ const n=$("trNext"); if(n) n.focus({preventScroll:true}); },0); });
-      const hb = el("button","btn hintbtn", tr.hint ? "Скрыть подсказку" : "💡 Подсказка"); hb.type="button"; hb.setAttribute("aria-expanded", String(!!tr.hint));
-      hb.addEventListener("click", () => {
-        if(!tr.opts){ // правильный вариант + два случайных из словаря
-          const others = [...new Set(usable.map(x => tr.dir==="ru2en" ? x.en : x.ru).filter(t => t && normRu(t)!==normRu(target)))];
-          for(let i=others.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [others[i],others[j]]=[others[j],others[i]]; }
-          const opts = [target].concat(others.slice(0,2));
-          for(let i=opts.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [opts[i],opts[j]]=[opts[j],opts[i]]; }
-          tr.opts = opts; }
-        tr.hint = !tr.hint; render(); });
-      const row = el("div","btns"); row.append(chk, idk, hb); f.append(inp, row); card.appendChild(f);
-      if(tr.hint && tr.opts){
-        const ho = el("div","hintopts"); ho.appendChild(el("div","hint","Выбери вариант — с подсказкой слово не продвигается к «запомнил»"));
-        tr.opts.forEach(o => { const b = el("button","btn opt", o); b.type="button";
-          b.addEventListener("click", async () => { tr.answer = o; tr.ok = isCorrect(o, target, tr.dir) || o===target; tr.hinted = true; tr.phase="result"; render(); await recordAnswer(cid, wk, tr.ok, true); setTimeout(()=>{ const n=$("trNext"); if(n) n.focus({preventScroll:true}); },0); });
-          ho.appendChild(b); });
-        card.appendChild(ho);
-      }
+      card.appendChild(el("div","tr-back","?"));
+      const row = el("div","btns"); const sh = el("button","btn primary big","Показать перевод"); sh.type="button"; sh.id="trShow";
+      sh.addEventListener("click", () => { tr.phase="shown"; render(); setTimeout(()=>{ const n=$("trYes"); if(n) n.focus({preventScroll:true}); },0); });
+      row.appendChild(sh); card.appendChild(row);
     } else {
-      const res = el("div","tr-res "+(tr.ok?"ok":"bad"));
-      res.appendChild(el("b",null, tr.ok ? (tr.hinted ? "Верно (с подсказкой)" : "Верно!") : (tr.answer ? "Неверно" : "Запомни")));
-      if(!tr.ok && tr.answer) res.appendChild(el("div","muted","Твой ответ: "+tr.answer));
-      res.appendChild(el("div","tr-target", target));
-      card.appendChild(res);
-      const row = el("div","btns"); const nx = el("button","btn primary","Дальше"); nx.type="button"; nx.id="trNext"; nx.addEventListener("click", next); row.appendChild(nx);
-      if(!tr.ok && tr.answer && me && !tr.hinted){ const ov = el("button","btn ghost","Я был прав"); ov.type="button";
-        ov.addEventListener("click", async () => { // отменяем ошибку: считаем от состояния до ответа, как будто ответ верный
-          const prev = tr.prev || {}; const s = (prev.s||0)+1; let wrong = !!prev.wrong; if(wrong && s >= CLEAR_AT) wrong = false;
-          const rec = { s, ok:(prev.ok||0)+1, bad:(prev.bad||0), wrong, last: today() };
-          progress[cid] = progress[cid] || {}; progress[cid].words = Object.assign({}, progress[cid].words, { [wk]: rec }); tr.ok = true; render();
-          try{ await fs.doc("users/"+state.me+"/progress/"+cid).set({ words:{ [wk]: rec } }, {merge:true}); }catch(e){ setStatus(explain(e), true); } });
-        row.appendChild(ov); }
-      card.appendChild(row);
+      card.appendChild(el("div","tr-target big", target));
+      const row = el("div","btns grade");
+      const no = el("button","btn gno","✗ Не угадал"); no.type="button"; no.id="trNo"; no.addEventListener("click", () => grade(false));
+      const yes = el("button","btn primary gyes","✓ Угадал"); yes.type="button"; yes.id="trYes"; yes.addEventListener("click", () => grade(true));
+      row.append(no, yes); card.appendChild(row);
+      if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
     if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "в разборе ошибок" : (p.s ? "верно подряд: "+p.s+" из "+LEARN_AT : "новое слово"); card.appendChild(el("div","hint", st)); }
     box.appendChild(card);
