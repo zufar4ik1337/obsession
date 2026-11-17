@@ -325,6 +325,7 @@ textarea{resize:vertical;min-height:84px}
 .btabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
 .btab{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .btab.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:600}
+.btab.ren{padding:6px 9px;margin-left:-3px}
 .btab.add{border-style:dashed;opacity:.85}
 .bpane{display:grid;gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.02)}
 .bpane .btn.mini{justify-self:start}
@@ -1052,7 +1053,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const existing = daysOf(cid, state.me)[date.value];
     const mn = el("input"); mn.type="number"; mn.id=mId; mn.min=1; mn.max=600; mn.value = drafts[mId] ?? (existing ? mins(existing) : g);
     const all = fieldsOf(cid), bf = all.filter(x => x.id!=="words"), wf = all.find(x => x.id==="words");
-    const tf = bf.find(x => x.type==="short");           // первое короткое поле = название блока
+    const tf = bf.find(x => x.id!=="text" && /книг|назван|автор/i.test(x.label)) || bf.find(x => x.type==="short" && x.id!=="text");   // поле «какую книгу…» или первое короткое = название блока
     const valOf = (b, fd) => { if(!b) return ""; if(fd.id==="text") return typeof b.text==="string" ? b.text : ""; const v = b.v && typeof b.v==="object" ? b.v[fd.id] : undefined; return Array.isArray(v) ? v.join("\n") : (v==null ? "" : String(v)); };
     let st = blockState[cid];
     if(!st || st.date!==date.value){
@@ -1072,7 +1073,9 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     // вкладки блоков
     const tabs = el("div","btabs");
     st.blocks.forEach((b, i) => { const t = el("button","btab"+(i===st.act?" on":""), titleOf(b, i)); t.type="button"; t.id="btab-"+i;
-      t.addEventListener("click", () => { st.act = i; render(); }); tabs.appendChild(t); });
+      t.addEventListener("click", () => { st.act = i; render(); }); tabs.appendChild(t);
+      if(i===st.act){ const ed = el("button","btab ren","✎"); ed.type="button"; ed.title="Переименовать"; ed.setAttribute("aria-label","Переименовать «"+titleOf(b,i)+"»");
+        ed.addEventListener("click", () => { const n = $("bf-"+st.act+"-"+(tf ? tf.id : "_t")); if(n){ n.focus(); if(n.select) n.select(); } }); tabs.appendChild(ed); } });
     if(st.blocks.length < BLOCK_MAX){ const add = el("button","btab add","+ Добавить "+noun.toLowerCase().replace(/а$/,"у").replace(/я$/,"ю")); add.type="button"; add.id="btabAdd";
       add.addEventListener("click", () => { st.blocks.push({ vals:{} }); st.act = st.blocks.length-1; render(); setTimeout(() => { const n = document.querySelector(".bpane input, .bpane textarea"); if(n) n.focus({preventScroll:true}); }, 0); }); tabs.appendChild(add); }
     f.appendChild(tabs);
@@ -1086,8 +1089,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       n.value = cur.vals[key] || ""; n.addEventListener("input", () => { cur.vals[key] = n.value; if(key===(tf?tf.id:"_t")){ const tb = $("btab-"+st.act); if(tb) tb.textContent = titleOf(cur, st.act); } });
       const l = el("label",null,label); l.htmlFor = n.id; if(type==="list") l.appendChild(el("span","hint","по одному на строку")); l.appendChild(n); return [l, n];
     };
-    if(!tf){ const [l, n] = mkInput(null, "_t", "Название", "short"); if(planTitles.length){ n.setAttribute("list","bPlanList"); } pane.appendChild(l); }
-    bf.forEach(fd => { const [l, n] = mkInput(fd, fd.id, fd.label, fd.type); if(fd===tf && planTitles.length) n.setAttribute("list","bPlanList"); if(fd.id==="text" && !fd.label) n.placeholder="Что прочитал"; pane.appendChild(l); });
+    if(!tf){ const [l, n] = mkInput(null, "_t", "Название: "+noun.toLowerCase().replace(/а$/,"и").replace(/я$/,"и"), "short"); n.placeholder = "например, «Царь-рыба»"; if(planTitles.length){ n.setAttribute("list","bPlanList"); } pane.appendChild(l); }
+    (tf ? [tf].concat(bf.filter(x => x!==tf)) : bf).forEach(fd => { const [l, n] = mkInput(fd, fd.id, fd.label, fd.type); if(fd===tf && planTitles.length) n.setAttribute("list","bPlanList"); if(fd.id==="text" && !fd.label) n.placeholder="Что прочитал"; pane.appendChild(l); });
     if(planTitles.length){ const dl = el("datalist"); dl.id="bPlanList"; planTitles.forEach(t => { const o = el("option"); o.value = t; dl.appendChild(o); }); pane.appendChild(dl); }
     if(st.blocks.length > 1){ const rm = el("button","btn ghost mini","Убрать «"+titleOf(cur, st.act)+"» из отчёта"); rm.type="button"; let armedB=false;
       rm.addEventListener("click", () => { if(!armedB){ armedB=true; rm.textContent="Точно убрать? Нажми ещё раз"; setTimeout(() => { armedB=false; rm.textContent="Убрать «"+titleOf(cur, st.act)+"» из отчёта"; }, 3000); return; }
