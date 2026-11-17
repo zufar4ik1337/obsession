@@ -322,6 +322,14 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
+.btabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
+.btab{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btab.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:600}
+.btab.add{border-style:dashed;opacity:.85}
+.bpane{display:grid;gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.02)}
+.bpane .btn.mini{justify-self:start}
+.rblock{border-left:2px solid var(--line);padding:2px 0 2px 10px;margin:8px 0;display:grid;gap:4px}
+.rbtitle{font-weight:700}
 .plan{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .pstrip{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;cursor:pointer;font-size:14px}
 .pstrip:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
@@ -607,7 +615,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   // ---------- rendering (with focus preservation) ----------
   const drafts = {};
   let openEmoji = false, emojiPack = 0, renaming = false;
-  const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set(), showAllDict = new Set(), editingReport = new Set();
+  const openComments = new Set(), openPast = new Set(), showAllFeed = new Set(), editingGoals = new Set(), showAllDict = new Set(), editingReport = new Set(), blockState = {};
   let cardIdx = -1, cardShown = false, cardFor = null, cardMode = "all";
 
   // мгновенно наверх и сразу сворачиваем; короткое проявление вместо долгой прокрутки — колесо мыши ничему не мешает
@@ -943,6 +951,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const date = el("input"); date.type="date"; date.id=dId; date.max=today(); date.value = drafts[dId] || today();
     const existing = daysOf(cid, state.me)[date.value];
     const mn = el("input"); mn.type="number"; mn.id=mId; mn.min=1; mn.max=600; mn.value = drafts[mId] ?? (existing ? mins(existing) : g);
+    const noun = blockNoun(cid);
+    if(noun) return blockReportForm(cid, noun);
     const ctrls = [];
     fieldsOf(cid).forEach(fd => {
       const id = fieldInputId(fd); const multi = fd.type==="long" || fd.type==="list";
@@ -1032,12 +1042,117 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const raw = String(txt||"").split("\n").map(l=>l.trim()).filter(Boolean).slice(0,60).map(l => { const p = splitPair(l); return { en:p.en, ru:p.ru }; });
     return normalizeWords(raw).map(w => w.ru ? { en:w.en, ru:w.ru } : { en:w.en });
   }
+  const BLOCK_MAX = 8;
+  // Отчёт из нескольких блоков (например, по каждой книге): общие — дата, минуты, слова; остальные поля повторяются в каждом блоке.
+  // Хранение: days[k] = { minutes, text (склейка для совместимости), b:[{t, tf, text, v:{id:val}}], f:[снимок полей], words }
+  function blockReportForm(cid, noun){
+    const f = el("form","report"); f.autocomplete="off";
+    const g = goalMinOf(cid), dId="fDate", mId="fMin";
+    const date = el("input"); date.type="date"; date.id=dId; date.max=today(); date.value = drafts[dId] || today();
+    const existing = daysOf(cid, state.me)[date.value];
+    const mn = el("input"); mn.type="number"; mn.id=mId; mn.min=1; mn.max=600; mn.value = drafts[mId] ?? (existing ? mins(existing) : g);
+    const all = fieldsOf(cid), bf = all.filter(x => x.id!=="words"), wf = all.find(x => x.id==="words");
+    const tf = bf.find(x => x.type==="short");           // первое короткое поле = название блока
+    const valOf = (b, fd) => { if(!b) return ""; if(fd.id==="text") return typeof b.text==="string" ? b.text : ""; const v = b.v && typeof b.v==="object" ? b.v[fd.id] : undefined; return Array.isArray(v) ? v.join("\n") : (v==null ? "" : String(v)); };
+    let st = blockState[cid];
+    if(!st || st.date!==date.value){
+      let blocks;
+      if(existing && Array.isArray(existing.b) && existing.b.length) blocks = existing.b.slice(0,BLOCK_MAX).map(b => { const vals = {}; bf.forEach(fd => { vals[fd.id] = valOf(b, fd); }); if(!tf) vals._t = str(b.t,200); return { vals }; });
+      else if(existing){ const vals = {}; bf.forEach(fd => { vals[fd.id] = fieldValueText(existing, fd); }); blocks = [{ vals }]; }
+      else blocks = [{ vals:{} }];
+      st = blockState[cid] = { date: date.value, blocks, act: 0 };
+    }
+    if(st.act >= st.blocks.length) st.act = st.blocks.length-1;
+    const titleOf = (b, i) => ((tf ? b.vals[tf.id] : b.vals._t) || "").trim() || (noun+" "+(i+1));
+    const title = existing ? "Правка отчёта за "+(date.value===today()?"сегодня":human(date.value)) : (date.value===today() ? "Отчёт за сегодня" : "Отчёт за "+human(date.value));
+    f.appendChild(el("h3",null,title));
+    const r = el("div","row2"); const l1 = el("label",null,"Дата"); l1.htmlFor=dId; l1.appendChild(date); const l2 = el("label",null,"Минут всего (нужно "+g+")"); l2.htmlFor=mId; l2.appendChild(mn); r.append(l1,l2); f.appendChild(r);
+    [date,mn].forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; }));
+    date.addEventListener("change", () => { drafts[dId]=date.value; clearRepDrafts(); render(); });
+    // вкладки блоков
+    const tabs = el("div","btabs");
+    st.blocks.forEach((b, i) => { const t = el("button","btab"+(i===st.act?" on":""), titleOf(b, i)); t.type="button"; t.id="btab-"+i;
+      t.addEventListener("click", () => { st.act = i; render(); }); tabs.appendChild(t); });
+    if(st.blocks.length < BLOCK_MAX){ const add = el("button","btab add","+ Добавить "+noun.toLowerCase()); add.type="button"; add.id="btabAdd";
+      add.addEventListener("click", () => { st.blocks.push({ vals:{} }); st.act = st.blocks.length-1; render(); setTimeout(() => { const n = document.querySelector(".bpane input, .bpane textarea"); if(n) n.focus({preventScroll:true}); }, 0); }); tabs.appendChild(add); }
+    f.appendChild(tabs);
+    // поля активного блока
+    const cur = st.blocks[st.act]; const pane = el("div","bpane");
+    const planTitles = (() => { const out = []; try{ monthItems(cid, state.me, monthKey()).forEach(x => out.push(x.title)); }catch(e){} return out; })();
+    const mkInput = (fd, key, label, type) => {
+      const multi = type==="long" || type==="list";
+      const n = multi ? el("textarea") : el("input"); n.id = "bf-"+st.act+"-"+key; n.maxLength = multi ? 2000 : 200;
+      if(!multi){ n.type = type==="number" ? "number" : "text"; if(type==="number"){ n.step="any"; n.inputMode="decimal"; } }
+      n.value = cur.vals[key] || ""; n.addEventListener("input", () => { cur.vals[key] = n.value; if(key===(tf?tf.id:"_t")){ const tb = $("btab-"+st.act); if(tb) tb.textContent = titleOf(cur, st.act); } });
+      const l = el("label",null,label); l.htmlFor = n.id; if(type==="list") l.appendChild(el("span","hint","по одному на строку")); l.appendChild(n); return [l, n];
+    };
+    if(!tf){ const [l, n] = mkInput(null, "_t", "Название", "short"); if(planTitles.length){ n.setAttribute("list","bPlanList"); } pane.appendChild(l); }
+    bf.forEach(fd => { const [l, n] = mkInput(fd, fd.id, fd.label, fd.type); if(fd===tf && planTitles.length) n.setAttribute("list","bPlanList"); if(fd.id==="text" && !fd.label) n.placeholder="Что прочитал"; pane.appendChild(l); });
+    if(planTitles.length){ const dl = el("datalist"); dl.id="bPlanList"; planTitles.forEach(t => { const o = el("option"); o.value = t; dl.appendChild(o); }); pane.appendChild(dl); }
+    if(st.blocks.length > 1){ const rm = el("button","btn ghost mini","Убрать «"+titleOf(cur, st.act)+"» из отчёта"); rm.type="button"; let armedB=false;
+      rm.addEventListener("click", () => { if(!armedB){ armedB=true; rm.textContent="Точно убрать? Нажми ещё раз"; setTimeout(() => { armedB=false; rm.textContent="Убрать «"+titleOf(cur, st.act)+"» из отчёта"; }, 3000); return; }
+        st.blocks.splice(st.act,1); st.act = Math.max(0, st.act-1); render(); });
+      pane.appendChild(rm); }
+    f.appendChild(pane);
+    let wn = null;
+    if(wf){ wn = el("textarea"); wn.id="fWords"; wn.maxLength=2000; wn.placeholder="to come up with — придумать"; wn.value = drafts.fWords ?? fieldValueText(existing, wf); wn.addEventListener("input", () => { drafts.fWords = wn.value; });
+      const l = el("label",null,wf.label+" "); l.htmlFor="fWords"; l.appendChild(el("span","hint","по одному на строку: word — перевод")); l.appendChild(wn); f.appendChild(l); }
+    const btns = el("div","btns left"); const save = el("button","btn primary","Сохранить отчёт"); save.type="submit"; btns.appendChild(save);
+    const endEdit = () => { editingReport.delete(cid); clearRepDrafts(); delete drafts[dId]; };
+    if(editingReport.has(cid)){ const cn = el("button","btn ghost","Отмена"); cn.type="button"; cn.addEventListener("click", () => { endEdit(); render(); }); btns.appendChild(cn); }
+    let armed=false;
+    if(existing){ const del = el("button","btn ghost","Удалить этот день"); del.type="button"; btns.appendChild(del);
+      del.addEventListener("click", async () => { if(!armed){ armed=true; del.textContent="Точно? Нажми ещё раз"; setTimeout(()=>{ armed=false; del.textContent="Удалить этот день"; },4000); return; }
+        if(await saveMember(cid, { days: { [date.value]: FV.delete() } })){ endEdit(); render(); } }); }
+    f.appendChild(btns);
+    const msg = el("div","msg hidden"); msg.setAttribute("role","status"); f.appendChild(msg);
+    f.addEventListener("submit", async (ev) => {
+      ev.preventDefault(); const k = date.value;
+      const show = (t, err) => { msg.textContent=t; msg.classList.remove("hidden"); msg.classList.toggle("err",!!err); };
+      if(!isKey(k) || k>today()){ show("Выбери дату не позже сегодняшней.", true); return; }
+      const filled = st.blocks.filter(b => Object.values(b.vals).some(x => String(x||"").trim()));
+      if(!filled.length){ show("Заполни хотя бы один блок.", true); return; }
+      for(let i=0;i<st.blocks.length;i++){ const b = st.blocks[i]; if(!filled.includes(b)) continue;
+        for(const fd of bf){ if(fd.req && !String(b.vals[fd.id]||"").trim()){ st.act = i; render(); setTimeout(() => { const m2 = document.querySelector(".report .msg"); if(m2){ m2.textContent = "«"+titleOf(b,i)+"»: заполни поле «"+fd.label+"»."; m2.classList.remove("hidden"); m2.classList.add("err"); } }, 0); return; } } }
+      const now = new Date().toISOString(); const prev = daysOf(cid, state.me)[k];
+      const rec = { minutes: clampNum(mn.value,1,600,g), createdAt:(prev&&prev.createdAt)||now, updatedAt:now };
+      rec.b = filled.map((b, i) => { const o = { t: titleOf(b, i).slice(0,200), v:{} }; if(tf) o.tf = tf.id;
+        bf.forEach(fd => { const raw = String(b.vals[fd.id]||"").trim(); if(!raw) return;
+          if(fd===tf) return;
+          if(fd.id==="text"){ o.text = raw.slice(0,2000); return; }
+          if(fd.type==="number"){ const num = Number(raw.replace(",",".")); if(isFinite(num)) o.v[fd.id] = num; }
+          else if(fd.type==="list") o.v[fd.id] = raw.split("\n").map(x => x.trim()).filter(Boolean).slice(0,60).map(x => x.slice(0,200));
+          else o.v[fd.id] = raw.slice(0,2000); });
+        return o; });
+      rec.text = rec.b.map(o => o.t + (o.text ? "\n"+o.text : "")).join("\n\n").slice(0,2000);
+      rec.f = bf.filter(fd => fd.id!=="text").map(fd => ({ id:fd.id, label:fd.label, type:fd.type }));
+      rec.v = FV.delete();
+      if(wn) rec.words = parseWords(wn.value);
+      save.disabled = true;
+      if(await saveMember(cid, { days: { [k]: rec } })){ endEdit(); render(); }
+      else save.disabled=false;
+    });
+    return f;
+  }
   function entryNode(cid, uid, k, r){
     const m = mins(r), g = goalMinOf(cid);
     const e = el("article","entry"+(m<g?" part":""));
     const meta = el("div","meta"); meta.append(el("span","who num", k===today()?"Сегодня":human(k)), el("span","pill "+(m>=g?"done":"part"), m+" мин"));
     if(uid===state.me){ const ed = el("button","btn ghost","Изменить"); ed.type="button"; ed.addEventListener("click", () => { editingReport.add(cid); drafts.fDate=k; clearRepDrafts(); render(); const f=$("fText"); if(f){ f.scrollIntoView({behavior:"smooth",block:"center"}); f.focus({preventScroll:true}); } }); meta.appendChild(ed); }
     e.appendChild(meta);
+    const fxs0 = Array.isArray(r.f) ? r.f : [];
+    if(Array.isArray(r.b) && r.b.length){
+      r.b.slice(0,BLOCK_MAX).forEach((b, i) => { if(!b || typeof b!=="object") return;
+        const bx = el("div","rblock"); bx.appendChild(el("div","rbtitle", str(b.t,200) || ("Блок "+(i+1))));
+        if(typeof b.text==="string" && b.text) bx.appendChild(el("div","text",b.text.slice(0,2000)));
+        const bv = b.v && typeof b.v==="object" ? b.v : {};
+        fxs0.forEach(fd => { if(!fd || typeof fd!=="object" || fd.id===b.tf) return; const val = bv[fd.id]; if(val==null || val==="" || (Array.isArray(val) && !val.length)) return;
+          const row = el("div","fx"); row.append(el("b",null,str(fd.label,60)+": "), document.createTextNode(Array.isArray(val) ? val.slice(0,60).map(x => String(x).slice(0,200)).join(" · ") : String(val).slice(0,2000))); bx.appendChild(row); });
+        e.appendChild(bx); });
+      const ws0 = normalizeWords(r.words);
+      if(ws0.length){ const w = el("div","words"); ws0.slice(0,60).forEach(x => { const s=el("span","word"); s.appendChild(el("b",null,String(x.en||""))); if(x.ru) s.appendChild(document.createTextNode(" — "+String(x.ru))); w.appendChild(s); }); e.appendChild(w); }
+      return e;
+    }
     if(typeof r.text==="string" && r.text) e.appendChild(el("div","text",r.text));
     const ws = normalizeWords(r.words);
     if(ws.length){ const w = el("div","words"); ws.slice(0,60).forEach(x => { if(!x||typeof x!=="object") return; const s=el("span","word"); s.appendChild(el("b",null,String(x.en||""))); if(x.ru) s.appendChild(document.createTextNode(" — "+String(x.ru))); w.appendChild(s); }); e.appendChild(w); }
@@ -1499,6 +1614,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     });
     return out.slice(0,12);
   }
+  const blockNoun = (cid) => { const c = ch(cid)||{}; return c.blocks ? (str(c.blocks,20) || "Книга") : ""; };
   const fieldsOf = (cid) => { const c = ch(cid)||{}; return Array.isArray(c.fields) ? cleanFields(c.fields) : defaultFields(!!c.dictionary); };
   function ensureWords(list, dict){
     let a = cleanFields(list); const has = a.some(f => f.id==="words");
@@ -1513,7 +1629,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     ["code","Код", d => ensureWords([{id:"text",label:"Что сделал",type:"long",req:true},{id:"p"+rid(),label:"Ссылка на коммит или PR",type:"short"}], d)]
   ];
   const fieldInputId = (f) => f.id==="text" ? "fText" : f.id==="words" ? "fWords" : "fv-"+f.id;
-  const clearRepDrafts = () => { Object.keys(drafts).forEach(k => { if(/^(fMin|fText|fWords|fv-.*)$/.test(k)) delete drafts[k]; }); };
+  const clearRepDrafts = () => { Object.keys(drafts).forEach(k => { if(/^(fMin|fText|fWords|fv-.*)$/.test(k)) delete drafts[k]; }); Object.keys(blockState).forEach(k => delete blockState[k]); };
   function fieldValueText(rec, f){
     if(!rec) return "";
     if(f.id==="text") return typeof rec.text==="string" ? rec.text : "";
@@ -1857,6 +1973,11 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const fe = fieldsEditor(cid, fieldsOf(cid), () => dc.checked);
     dc.addEventListener("change", () => { fieldDrafts[cid] = ensureWords(fieldDrafts[cid], dc.checked); fe.redraw(); });
     f.append(el("h3",null,"Форма отчёта"), el("div","hint","Поля, которые участники заполняют каждый день. Старые отчёты остаются как были."), fe.node);
+    const ml = el("label","check"); const mc = el("input"); mc.type="checkbox"; mc.id="sBlocks"; mc.checked=!!c.blocks; ml.htmlFor="sBlocks"; ml.append(mc, document.createTextNode("Несколько блоков в одном отчёте (например, по каждой книге)"));
+    const mnl = el("label",null,"Как называть блок"); const mni = el("input"); mni.type="text"; mni.id="sBlockNoun"; mni.maxLength=20; mni.value = (c.blocks && str(c.blocks,20)) || "Книга"; mnl.htmlFor="sBlockNoun"; mnl.appendChild(mni);
+    const mh = el("div","hint","Все поля, кроме минут и слов, повторяются для каждого блока. Первое поле «Короткий текст» станет названием блока (например, «Какую книгу читаешь»).");
+    const mbox = el("div"); mbox.append(mnl, mh); mbox.hidden = !mc.checked; mc.addEventListener("change", () => { mbox.hidden = !mc.checked; });
+    f.append(ml, mbox);
     const pl = el("label","check"); const pc = el("input"); pc.type="checkbox"; pc.id="sPlan"; pc.checked=!!c.planEnabled; pl.htmlFor="sPlan"; pl.append(pc, document.createTextNode("План с чек-пойнтами по месяцам (у каждого участника свой)"));
     const tb = templateBox(cid, c.planTemplate); tb.hidden = !pc.checked; pc.addEventListener("change", () => { tb.hidden = !pc.checked; });
     f.append(pl, tb);
@@ -1867,7 +1988,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     btns.appendChild(del); f.appendChild(btns);
     f.addEventListener("submit", async ev => { ev.preventDefault(); sv.disabled=true;
       const ok = await saveChallenge(cid, { title: t.value.trim().slice(0,60) || c.title, topic: tp.value.trim().slice(0,30), description: ds.value.trim().slice(0,400),
-        minutes: clampNum(mn.value,1,600,goalMinOf(cid)), goalDays: clampNum(gd.value,1,1000,goalDaysOf(cid)), startDate: isKey(st.value)?st.value:startOf(cid), penalty: clampNum(pn.value,0,100000,penaltyOf(cid)), dictionary: dc.checked, fields: cleanFields(ensureWords(fieldDrafts[cid], dc.checked)), planEnabled: pc.checked, ...(cid in tplDrafts ? { planTemplate: tplDrafts[cid] } : {}) });
+        minutes: clampNum(mn.value,1,600,goalMinOf(cid)), goalDays: clampNum(gd.value,1,1000,goalDaysOf(cid)), startDate: isKey(st.value)?st.value:startOf(cid), penalty: clampNum(pn.value,0,100000,penaltyOf(cid)), dictionary: dc.checked, fields: cleanFields(ensureWords(fieldDrafts[cid], dc.checked)), planEnabled: pc.checked, blocks: mc.checked ? (mni.value.trim().slice(0,20) || "Книга") : "", ...(cid in tplDrafts ? { planTemplate: tplDrafts[cid] } : {}) });
       if(ok){ ["sTitle","sTopic","sDesc","sMin","sGoal","sStart","sPen"].forEach(k=>delete drafts[k]); delete fieldDrafts[cid]; delete tplDrafts[cid]; render(); setStatus("Настройки сохранены."); setTimeout(()=>setStatus(""),2500); }
       sv.disabled=false; });
     p.appendChild(f);
