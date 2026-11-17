@@ -1057,7 +1057,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     let st = blockState[cid];
     if(!st || st.date!==date.value){
       let blocks;
-      if(existing && Array.isArray(existing.b) && existing.b.length) blocks = existing.b.slice(0,BLOCK_MAX).map(b => { const vals = {}; bf.forEach(fd => { vals[fd.id] = valOf(b, fd); }); if(!tf) vals._t = str(b.t,200); return { vals }; });
+      if(existing && Array.isArray(existing.b) && existing.b.length) blocks = existing.b.slice(0,BLOCK_MAX).map(b => { const vals = {}; bf.forEach(fd => { vals[fd.id] = valOf(b, fd); }); vals[tf ? tf.id : "_t"] = str(b.t,200); return { vals }; });
       else if(existing){ const vals = {}; bf.forEach(fd => { vals[fd.id] = fieldValueText(existing, fd); }); blocks = [{ vals }]; }
       else blocks = [{ vals:{} }];
       st = blockState[cid] = { date: date.value, blocks, act: 0 };
@@ -1073,7 +1073,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const tabs = el("div","btabs");
     st.blocks.forEach((b, i) => { const t = el("button","btab"+(i===st.act?" on":""), titleOf(b, i)); t.type="button"; t.id="btab-"+i;
       t.addEventListener("click", () => { st.act = i; render(); }); tabs.appendChild(t); });
-    if(st.blocks.length < BLOCK_MAX){ const add = el("button","btab add","+ Добавить "+noun.toLowerCase()); add.type="button"; add.id="btabAdd";
+    if(st.blocks.length < BLOCK_MAX){ const add = el("button","btab add","+ Добавить "+noun.toLowerCase().replace(/а$/,"у").replace(/я$/,"ю")); add.type="button"; add.id="btabAdd";
       add.addEventListener("click", () => { st.blocks.push({ vals:{} }); st.act = st.blocks.length-1; render(); setTimeout(() => { const n = document.querySelector(".bpane input, .bpane textarea"); if(n) n.focus({preventScroll:true}); }, 0); }); tabs.appendChild(add); }
     f.appendChild(tabs);
     // поля активного блока
