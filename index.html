@@ -321,6 +321,7 @@ textarea{resize:vertical;min-height:84px}
 .hintopts .opt:hover{border-color:var(--ink)}
 
 /* plan + report fields */
+.danger-txt{color:#e0a0a0}
 .plan{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .pstrip{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;cursor:pointer;font-size:14px}
 .pstrip:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
@@ -1811,6 +1812,11 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const c = ch(cid);
       if(c.planEnabled && typeof c.planTemplate==="string" && c.planTemplate){ const tb = el("button","btn","Взять шаблон челленджа"); tb.type="button"; tb.addEventListener("click", () => importPlan(cid, c.planTemplate)); row.appendChild(tb); }
       const ex = el("button","btn ghost","Экспорт плана (JSON)"); ex.type="button"; ex.addEventListener("click", () => exportPlan(cid)); row.appendChild(ex);
+      const hasAny = Object.keys(planOf(cid, state.me)).some(k => MONTH_ID.test(k) && monthItems(cid, state.me, k).length);
+      if(hasAny){ const del = el("button","btn ghost danger-txt","Удалить весь план"); del.type="button"; del.id="pDelAll"; let armed=false;
+        del.addEventListener("click", async () => { if(!armed){ armed=true; del.textContent="Точно удалить все месяцы?"; setTimeout(() => { armed=false; del.textContent="Удалить весь план"; }, 4000); return; }
+          del.disabled=true; if(await saveMember(cid, { plan: FV.delete() })) flash("План удалён. Можно загрузить свой."); else del.disabled=false; });
+        row.appendChild(del); }
       tools.appendChild(row); body.appendChild(tools);
     } else body.appendChild(el("div","hint","Это план участника — менять его и ставить галочки может только он сам."));
     box.appendChild(body); return box;
