@@ -1089,7 +1089,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       n.value = cur.vals[key] || ""; n.addEventListener("input", () => { cur.vals[key] = n.value; if(key===(tf?tf.id:"_t")){ const tb = $("btab-"+st.act); if(tb) tb.textContent = titleOf(cur, st.act); } });
       const l = el("label",null,label); l.htmlFor = n.id; if(type==="list") l.appendChild(el("span","hint","по одному на строку")); l.appendChild(n); return [l, n];
     };
-    if(!tf){ const [l, n] = mkInput(null, "_t", "Название: "+noun.toLowerCase().replace(/а$/,"и").replace(/я$/,"и"), "short"); n.placeholder = "например, «Царь-рыба»"; if(planTitles.length){ n.setAttribute("list","bPlanList"); } pane.appendChild(l); }
+    if(!tf){ const [l, n] = mkInput(null, "_t", "Название "+noun.toLowerCase().replace(/а$/,"и").replace(/я$/,"и"), "short"); n.placeholder = "например, «Царь-рыба»"; if(planTitles.length){ n.setAttribute("list","bPlanList"); } pane.appendChild(l); }
     (tf ? [tf].concat(bf.filter(x => x!==tf)) : bf).forEach(fd => { const [l, n] = mkInput(fd, fd.id, fd.label, fd.type); if(fd===tf && planTitles.length) n.setAttribute("list","bPlanList"); if(fd.id==="text" && !fd.label) n.placeholder="Что прочитал"; pane.appendChild(l); });
     if(planTitles.length){ const dl = el("datalist"); dl.id="bPlanList"; planTitles.forEach(t => { const o = el("option"); o.value = t; dl.appendChild(o); }); pane.appendChild(dl); }
     if(st.blocks.length > 1){ const rm = el("button","btn ghost mini","Убрать «"+titleOf(cur, st.act)+"» из отчёта"); rm.type="button"; let armedB=false;
