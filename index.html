@@ -322,7 +322,9 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
-.entry .cards-fx{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
+.entry .cards-fx{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:2px;align-items:baseline}
+.entry .cards-fx .cf-label{grid-column:1;align-self:start}
+.entry .cards-fx .cf-item{grid-column:2}
 .btabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
 .btab{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .btab.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:600}
@@ -1374,8 +1376,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   function cardsLine(cid, uid, day){
     const t = cardsToday(cid, uid, day); const parts = CARD_KINDS.filter(([k]) => t[k].all);
     if(!parts.length) return null;
-    const row = el("div","fx cards-fx"); row.appendChild(el("b",null,"Карточки: "));
-    parts.forEach(([k,one,few,many], i) => { if(i) row.appendChild(document.createTextNode(" · ")); row.append(el("b","num",String(t[k].ok)), document.createTextNode(" из "+t[k].all+" "+plural(t[k].all,one,few,many))); });
+    const row = el("div","fx cards-fx"); const lb = el("b","cf-label","Карточки:"); lb.style.gridRow = "1 / span "+parts.length; row.appendChild(lb);
+    parts.forEach(([k,one,few,many]) => { const it = el("span","cf-item"); it.append(el("b","num",String(t[k].ok)), document.createTextNode(" из "+t[k].all+" "+plural(t[k].all,one,few,many))); row.appendChild(it); });
     row.title = "угадано из пройденных за этот день"; return row;
   }
   function cardsNode(cid, uid){
