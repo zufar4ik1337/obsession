@@ -813,14 +813,14 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     { const c = ch(cid), parts = [];
       const fl = (Array.isArray(c.fields) ? cleanFields(c.fields) : defaultFields(!!c.dictionary)).map(f => f.label);
       if(fl.length) parts.push("В отчёте: "+fl.join(", ")+".");
-      if(c.planEnabled){ let n = 0; try{ n = c.planTemplate ? normalizePlan(JSON.parse(c.planTemplate)).count : 0; }catch(e){} parts.push("Есть личный план с чек-пойнтами по месяцам"+(n ? ": на старте у тебя будет "+planWord(n)+" из шаблона." : ", он у каждого свой и виден другим.")); }
+      if(c.planEnabled){ let n = 0; try{ n = c.planTemplate ? normalizePlan(JSON.parse(c.planTemplate)).count : 0; }catch(e){} parts.push("Есть личный план с чек-пойнтами по месяцам: у каждого свой, на старте пустой"+(n ? " (можно взять готовый шаблон челленджа — "+planWord(n)+")" : "")+"."); }
       if(parts.length) p.appendChild(el("div","hint",parts.join(" "))); }
     const f = el("form","rename"); const i = el("input"); i.type="text"; i.id="joinNick"; i.maxLength=30; i.placeholder="Как тебя подписать"; i.value = drafts.joinNick ?? state.myName;
     i.addEventListener("input", () => drafts.joinNick = i.value);
     const b = el("button","btn primary","Вступить"); b.type="submit";
     f.append(i,b);
     f.addEventListener("submit", async (ev) => { ev.preventDefault(); b.disabled=true;
-      const ok = await saveMember(cid, Object.assign({ nick: i.value.trim().slice(0,30), joinedAt: new Date().toISOString(), days:{} }, templatePatch(cid)));
+      const ok = await saveMember(cid, Object.assign({ nick: i.value.trim().slice(0,30), joinedAt: new Date().toISOString(), days:{} }));
       if(ok){ delete drafts.joinNick; state.selected[cid]=state.me; } b.disabled=false; });
     p.appendChild(f); return p;
   }
@@ -1794,15 +1794,18 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     try{ const p = normalizePlan(JSON.parse(c.planTemplate)); const plan = {}; Object.keys(p.months).forEach(k => { plan[k] = { items: p.months[k].map(x => Object.assign({}, x, { done:null, note:"" })) }; }); return { plan }; }
     catch(e){ return {}; }
   }
+  // Загрузка плана из файла или шаблона ЗАМЕНЯЕТ весь план целиком (старые месяцы удаляются)
   async function importPlan(cid, text){
     let p; try{ p = parsePlanText(text); }catch(e){ flash(e.message, true); return; }
-    const map = {}; let added = 0;
-    Object.keys(p.months).forEach(k => {
-      const cur = monthItems(cid, state.me, k); const have = new Set(cur.map(x => x.title.toLowerCase()));
-      const add = p.months[k].filter(x => !have.has(x.title.toLowerCase())); if(add.length){ map[k] = cur.concat(add).slice(0,PLAN_MAX_ITEMS); added += add.length; }
-    });
-    if(!added){ flash("Все пункты из файла уже есть в твоём плане."); return; }
-    if(await savePlanMonths(cid, map)) flash("Добавлено: "+planWord(added)+" в "+Object.keys(map).length+" "+plural(Object.keys(map).length,"месяц","месяца","месяцев")+"."+(p.skipped.length ? " Пропущено строк: "+p.skipped.length+" — "+p.skipped.slice(0,2).join("; ")+"." : ""));
+    const plan = {}; let n = 0;
+    Object.keys(p.months).forEach(k => { const items = p.months[k].slice(0,PLAN_MAX_ITEMS); if(items.length){ plan[k] = { items }; n += items.length; } });
+    if(!n){ flash("В файле нет ни одного пункта плана.", true); return; }
+    const m = Object.assign({}, memberOf(cid, state.me) || {}); delete m.plan;
+    if(JSON.stringify(m).length + JSON.stringify(plan).length > PLAN_MAX_BYTES){ flash("План вместе с отчётами слишком большой для хранения (лимит базы ~1 МБ). Сократи описания или убери лишние пункты.", true); return; }
+    try{ await fs.doc("challenges/"+cid+"/members/"+state.me).update({ plan }); }
+    catch(e){ setStatus(explain(e), true); return; }
+    const mc = Object.keys(plan).length;
+    flash("План заменён: "+planWord(n)+" в "+mc+" "+plural(mc,"месяц","месяца","месяцев")+"."+(p.skipped.length ? " Пропущено строк: "+p.skipped.length+" — "+p.skipped.slice(0,2).join("; ")+"." : ""));
   }
   function exportPlan(cid){
     const pl = planOf(cid, state.me); const months = Object.keys(pl).filter(k => MONTH_ID.test(k)).sort().map(k => ({ id:k, items: monthItems(cid, state.me, k).map(({title,size,why,intro,note,done}) => ({title,size,why,intro,note,done})) }));
@@ -1901,12 +1904,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const cur = () => key in tplDrafts ? tplDrafts[key] : (current||"");
     function draw(){
       box.replaceChildren(); const raw = cur(); let info = "Шаблона нет — участники начинают с пустого плана.";
-      if(raw){ try{ const p = normalizePlan(JSON.parse(raw)); info = "Шаблон: "+planWord(p.count)+", месяцев: "+p.monthsN+". Новые участники получат копию."; }catch(e){ info = "Шаблон повреждён — загрузи заново."; } }
+      if(raw){ try{ const p = normalizePlan(JSON.parse(raw)); info = "Шаблон: "+planWord(p.count)+", месяцев: "+p.monthsN+". Участники начинают с пустого плана и могут взять шаблон кнопкой «Взять шаблон челленджа»."; }catch(e){ info = "Шаблон повреждён — загрузи заново."; } }
       const infoEl = el("div","hint",info); box.appendChild(infoEl);
       if(!builders[key]) builders[key] = builderFrom(raw);
       box.appendChild(el("div","pb-title","Собрать план на сайте"));
       box.appendChild(builderNode(key, () => { const r = cur(); let t = "Шаблона нет — участники начинают с пустого плана.";
-        if(r){ try{ const p = normalizePlan(JSON.parse(r)); t = "Шаблон: "+planWord(p.count)+", месяцев: "+p.monthsN+". Новые участники получат копию. Не забудь сохранить."; }catch(e){} } infoEl.textContent = t; }));
+        if(r){ try{ const p = normalizePlan(JSON.parse(r)); t = "Шаблон: "+planWord(p.count)+", месяцев: "+p.monthsN+". Участники смогут взять его кнопкой «Взять шаблон челленджа». Не забудь сохранить."; }catch(e){} } infoEl.textContent = t; }));
       const fileBox = el("details","pastebox"); fileBox.appendChild(el("summary",null,"или загрузить готовый файл JSON / XML")); box.appendChild(fileBox);
       fileBox.appendChild(dropZone("Перетащи шаблон .json / .xml или нажми, чтобы выбрать", async (t) => {
         const p = parsePlanText(t); const out = JSON.stringify({ format:"obsession-plan", version:1, months: Object.keys(p.months).sort().map(k => ({ id:k, items: p.months[k].map(({title,size,why,intro}) => ({title,size,why,intro})) })) });
@@ -1968,7 +1971,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
         b.disabled = false; if(ok){ setTimeout(() => { const n=$("pAdd"); if(n) n.focus({preventScroll:true}); },0); } else { drafts.pAdd = tv; drafts.pAddSize = szv; t.value = tv; sz.value = szv; } });
       body.appendChild(f);
       const tools = el("div","ptools");
-      tools.appendChild(dropZone("Перетащи сюда план (.json / .xml) или нажми", (txt) => importPlan(cid, txt)));
+      tools.appendChild(dropZone("Перетащи сюда план (.json / .xml) или нажми — он заменит текущий план целиком", (txt) => importPlan(cid, txt)));
       const row = el("div","btns left");
       const c = ch(cid);
       if(c.planEnabled && typeof c.planTemplate==="string" && c.planTemplate){ const tb = el("button","btn","Взять шаблон челленджа"); tb.type="button"; tb.addEventListener("click", () => importPlan(cid, c.planTemplate)); row.appendChild(tb); }
