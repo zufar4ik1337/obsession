@@ -322,6 +322,7 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
+.entry .cards-fx{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
 .btabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
 .btab{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .btab.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:600}
@@ -1171,6 +1172,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const meta = el("div","meta"); meta.append(el("span","who num", k===today()?"Сегодня":human(k)), el("span","pill "+(m>=g?"done":"part"), m+" мин"));
     if(uid===state.me){ const ed = el("button","btn ghost","Изменить"); ed.type="button"; ed.addEventListener("click", () => { editingReport.add(cid); drafts.fDate=k; clearRepDrafts(); render(); const f=$("fText"); if(f){ f.scrollIntoView({behavior:"smooth",block:"center"}); f.focus({preventScroll:true}); } }); meta.appendChild(ed); }
     e.appendChild(meta);
+    const cl = cardsLine(cid, uid, k);
     const fxs0 = Array.isArray(r.f) ? r.f : [];
     if(Array.isArray(r.b) && r.b.length){
       r.b.slice(0,BLOCK_MAX).forEach((b, i) => { if(!b || typeof b!=="object") return;
@@ -1182,6 +1184,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
         e.appendChild(bx); });
       const ws0 = normalizeWords(r.words);
       if(ws0.length){ const w = el("div","words"); ws0.slice(0,60).forEach(x => { const s=el("span","word"); s.appendChild(el("b",null,String(x.en||""))); if(x.ru) s.appendChild(document.createTextNode(" — "+String(x.ru))); w.appendChild(s); }); e.appendChild(w); }
+      if(cl) e.appendChild(cl);
       return e;
     }
     if(typeof r.text==="string" && r.text) e.appendChild(el("div","text",r.text));
@@ -1190,6 +1193,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const fxs = Array.isArray(r.f) ? r.f : []; const vv = r.v && typeof r.v==="object" ? r.v : {};
     fxs.forEach(fd => { if(!fd || typeof fd!=="object") return; const val = vv[fd.id]; if(val==null || val==="" || (Array.isArray(val) && !val.length)) return;
       const row = el("div","fx"); row.append(el("b",null,str(fd.label,60)+": "), document.createTextNode(Array.isArray(val) ? val.slice(0,60).map(x => String(x).slice(0,200)).join(" · ") : String(val).slice(0,2000))); e.appendChild(row); });
+    if(cl) e.appendChild(cl);
     return e;
   }
 
@@ -1361,10 +1365,18 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!isMember(cid) || !FV || !FV.increment) return;
     saveMember(cid, { cards: { [today()]: { [kind]: { ok: FV.increment(ok?1:0), all: FV.increment(1) } } } });
   }
-  function cardsToday(cid, uid){
-    const m = memberOf(cid, uid) || {}; const d = m.cards && typeof m.cards==="object" ? m.cards[today()] : null;
+  function cardsToday(cid, uid, day){
+    const m = memberOf(cid, uid) || {}; const d = m.cards && typeof m.cards==="object" ? m.cards[day || today()] : null;
     const g = (k) => { const x = d && d[k] && typeof d[k]==="object" ? d[k] : {}; return { ok: Math.max(0, Number(x.ok)||0), all: Math.max(0, Number(x.all)||0) }; };
     return { w: g("w"), v: g("v"), p: g("p"), a: g("a") };
+  }
+  const CARD_KINDS = [["w","слова","слов","слов"],["v","глагола","глаголов","глаголов"],["p","предлога","предлогов","предлогов"],["a","артикля","артиклей","артиклей"]];
+  function cardsLine(cid, uid, day){
+    const t = cardsToday(cid, uid, day); const parts = CARD_KINDS.filter(([k]) => t[k].all);
+    if(!parts.length) return null;
+    const row = el("div","fx cards-fx"); row.appendChild(el("b",null,"Карточки: "));
+    parts.forEach(([k,one,few,many], i) => { if(i) row.appendChild(document.createTextNode(" · ")); row.append(el("b","num",String(t[k].ok)), document.createTextNode(" из "+t[k].all+" "+plural(t[k].all,one,few,many))); });
+    row.title = "угадано из пройденных за этот день"; return row;
   }
   function cardsNode(cid, uid){
     const t = cardsToday(cid, uid); const box = el("div","cards-today");
