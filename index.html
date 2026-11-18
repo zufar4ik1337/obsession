@@ -945,11 +945,34 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     return box;
   }
 
+  // ---- черновик отчёта: не теряется при смене даты и перезагрузке ----
+  const REP_KEY_RE = /^(fMin|fText|fWords|fv-.*)$/;
+  const typedDraft = () => Object.keys(drafts).some(k => /^(fText|fWords|fv-.*)$/.test(k) && String(drafts[k]||"").trim());
+  const blocksTyped = (st) => !!(st && st.blocks && st.blocks.some(b => Object.values(b.vals||{}).some(x => String(x||"").trim())));
+  function backupDraft(cid){ try{ const o = {}; Object.keys(drafts).forEach(k => { if(REP_KEY_RE.test(k) || k==="fDate") o[k] = drafts[k]; });
+    const st = blockState[cid]; if(st) o._blocks = st.blocks; localStorage.setItem("repdraft:"+cid, JSON.stringify(o)); }catch(e){} }
+  function dropDraft(cid){ try{ localStorage.removeItem("repdraft:"+cid); }catch(e){} }
+  const restoredDraft = new Set();
+  function restoreDraft(cid){
+    if(restoredDraft.has(cid)) return; restoredDraft.add(cid);
+    let o = null; try{ o = JSON.parse(localStorage.getItem("repdraft:"+cid)||"null"); }catch(e){}
+    if(!o || typeof o!=="object") return;
+    Object.keys(o).forEach(k => { if((REP_KEY_RE.test(k) || k==="fDate") && typeof o[k]==="string" && !(k in drafts)) drafts[k] = o[k]; });
+    if(Array.isArray(o._blocks) && o._blocks.length && !blockState[cid] && isKey(o.fDate||"")) blockState[cid] = { date: o.fDate, blocks: o._blocks.filter(b => b && typeof b==="object").map(b => ({ vals: (b.vals && typeof b.vals==="object") ? b.vals : {} })), act: 0, restored: true };
+    if(Object.keys(o).some(k => /^(fText|fWords|fv-.*)$/.test(k) && String(o[k]||"").trim()) || blocksTyped(blockState[cid])) editingReport.add(cid);
+  }
+  // После полуночи до 5 утра отчёт по умолчанию — за вчера (если за вчера его ещё нет)
+  function defaultRepDate(cid){
+    const h = new Date().getHours(), y = addDays(today(), -1), d = daysOf(cid, state.me);
+    if(h < 5 && !d[y] && !d[today()]) return y;
+    return today();
+  }
   function reportForm(cid){
     const f = el("form","report"); f.autocomplete="off";
     const g = goalMinOf(cid);
     const dId="fDate", mId="fMin", tId="fText", wId="fWords";
-    const date = el("input"); date.type="date"; date.id=dId; date.max=today(); date.value = drafts[dId] || today();
+    restoreDraft(cid);
+    const date = el("input"); date.type="date"; date.id=dId; date.max=today(); date.value = drafts[dId] || defaultRepDate(cid);
     const existing = daysOf(cid, state.me)[date.value];
     const mn = el("input"); mn.type="number"; mn.id=mId; mn.min=1; mn.max=600; mn.value = drafts[mId] ?? (existing ? mins(existing) : g);
     const noun = blockNoun(cid);
@@ -963,15 +986,17 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       n.value = drafts[id] ?? fieldValueText(existing, fd);
       ctrls.push([fd, n]);
     });
-    [date,mn].concat(ctrls.map(x => x[1])).forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; }));
-    date.addEventListener("change", () => { drafts[dId]=date.value; clearRepDrafts(); render(); });
+    [date,mn].concat(ctrls.map(x => x[1])).forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; backupDraft(cid); }));
+    date.addEventListener("change", () => { if(!isKey(date.value)) return; drafts[dId]=date.value; if(!typedDraft()) clearRepDrafts(); backupDraft(cid); render(); });
     const title = existing ? "Правка отчёта за "+(date.value===today()?"сегодня":human(date.value)) : (date.value===today() ? "Отчёт за сегодня" : "Отчёт за "+human(date.value));
     f.appendChild(el("h3",null,title));
+    if(existing && (typedDraft() || blocksTyped(blockState[cid]))) f.appendChild(el("div","msg err","За "+(date.value===today()?"сегодня":human(date.value))+" уже есть отчёт. Если сохранить, он заменится тем, что сейчас в форме."));
+    else if(!existing && !drafts[dId] && date.value!==today()) f.appendChild(el("div","hint","Сейчас ночь, поэтому отчёт по умолчанию за вчера. Если он за сегодня — поменяй дату, текст не пропадёт."));
     const r = el("div","row2"); const l1 = el("label",null,"Дата"); l1.htmlFor=dId; l1.appendChild(date); const l2 = el("label",null,"Минут (нужно "+g+")"); l2.htmlFor=mId; l2.appendChild(mn); r.append(l1,l2); f.appendChild(r);
     ctrls.forEach(([fd, n]) => { const l = el("label",null,fd.label+(fd.type==="list"?" ":"")); l.htmlFor=n.id;
       if(fd.type==="list") l.appendChild(el("span","hint","по одному на строку"+(fd.id==="words"?": word — перевод":""))); l.appendChild(n); f.appendChild(l); });
     const btns = el("div","btns left"); const save = el("button","btn primary","Сохранить отчёт"); save.type="submit"; btns.appendChild(save);
-    const endEdit = () => { editingReport.delete(cid); clearRepDrafts(); delete drafts[dId]; };
+    const endEdit = () => { editingReport.delete(cid); clearRepDrafts(); delete drafts[dId]; dropDraft(cid); };
     if(editingReport.has(cid)){ const cn = el("button","btn ghost","Отмена"); cn.type="button"; cn.addEventListener("click", () => { endEdit(); render(); }); btns.appendChild(cn); }
     let armed=false;
     if(existing){ const del = el("button","btn ghost","Удалить этот день"); del.type="button"; btns.appendChild(del);
@@ -1049,7 +1074,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   function blockReportForm(cid, noun){
     const f = el("form","report"); f.autocomplete="off";
     const g = goalMinOf(cid), dId="fDate", mId="fMin";
-    const date = el("input"); date.type="date"; date.id=dId; date.max=today(); date.value = drafts[dId] || today();
+    const date = el("input"); date.type="date"; date.id=dId; date.max=today(); date.value = drafts[dId] || defaultRepDate(cid);
     const existing = daysOf(cid, state.me)[date.value];
     const mn = el("input"); mn.type="number"; mn.id=mId; mn.min=1; mn.max=600; mn.value = drafts[mId] ?? (existing ? mins(existing) : g);
     const all = fieldsOf(cid), bf = all.filter(x => x.id!=="words"), wf = all.find(x => x.id==="words");
@@ -1067,9 +1092,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const titleOf = (b, i) => ((tf ? b.vals[tf.id] : b.vals._t) || "").trim() || (noun+" "+(i+1));
     const title = existing ? "Правка отчёта за "+(date.value===today()?"сегодня":human(date.value)) : (date.value===today() ? "Отчёт за сегодня" : "Отчёт за "+human(date.value));
     f.appendChild(el("h3",null,title));
+    if(existing && (typedDraft() || blocksTyped(blockState[cid]))) f.appendChild(el("div","msg err","За "+(date.value===today()?"сегодня":human(date.value))+" уже есть отчёт. Если сохранить, он заменится тем, что сейчас в форме."));
+    else if(!existing && !drafts[dId] && date.value!==today()) f.appendChild(el("div","hint","Сейчас ночь, поэтому отчёт по умолчанию за вчера. Если он за сегодня — поменяй дату, текст не пропадёт."));
     const r = el("div","row2"); const l1 = el("label",null,"Дата"); l1.htmlFor=dId; l1.appendChild(date); const l2 = el("label",null,"Минут всего (нужно "+g+")"); l2.htmlFor=mId; l2.appendChild(mn); r.append(l1,l2); f.appendChild(r);
-    [date,mn].forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; }));
-    date.addEventListener("change", () => { drafts[dId]=date.value; clearRepDrafts(); render(); });
+    [date,mn].forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; backupDraft(cid); }));
+    date.addEventListener("change", () => { if(!isKey(date.value)) return; drafts[dId]=date.value; const st0 = blockState[cid];
+      if(blocksTyped(st0) || typedDraft()){ if(st0) st0.date = date.value; } else clearRepDrafts(); backupDraft(cid); render(); });
     // вкладки блоков
     const tabs = el("div","btabs");
     st.blocks.forEach((b, i) => { const t = el("button","btab"+(i===st.act?" on":""), titleOf(b, i)); t.type="button"; t.id="btab-"+i;
@@ -1077,7 +1105,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       if(i===st.act){ const ed = el("button","btab ren","✎"); ed.type="button"; ed.title="Переименовать"; ed.setAttribute("aria-label","Переименовать «"+titleOf(b,i)+"»");
         ed.addEventListener("click", () => { const n = $("bf-"+st.act+"-"+(tf ? tf.id : "_t")); if(n){ n.focus(); if(n.select) n.select(); } }); tabs.appendChild(ed); } });
     if(st.blocks.length < BLOCK_MAX){ const add = el("button","btab add","+ Добавить "+noun.toLowerCase().replace(/а$/,"у").replace(/я$/,"ю")); add.type="button"; add.id="btabAdd";
-      add.addEventListener("click", () => { st.blocks.push({ vals:{} }); st.act = st.blocks.length-1; render(); setTimeout(() => { const n = document.querySelector(".bpane input, .bpane textarea"); if(n) n.focus({preventScroll:true}); }, 0); }); tabs.appendChild(add); }
+      add.addEventListener("click", () => { st.blocks.push({ vals:{} }); backupDraft(cid); st.act = st.blocks.length-1; render(); setTimeout(() => { const n = document.querySelector(".bpane input, .bpane textarea"); if(n) n.focus({preventScroll:true}); }, 0); }); tabs.appendChild(add); }
     f.appendChild(tabs);
     // поля активного блока
     const cur = st.blocks[st.act]; const pane = el("div","bpane");
@@ -1086,7 +1114,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const multi = type==="long" || type==="list";
       const n = multi ? el("textarea") : el("input"); n.id = "bf-"+st.act+"-"+key; n.maxLength = multi ? 2000 : 200;
       if(!multi){ n.type = type==="number" ? "number" : "text"; if(type==="number"){ n.step="any"; n.inputMode="decimal"; } }
-      n.value = cur.vals[key] || ""; n.addEventListener("input", () => { cur.vals[key] = n.value; if(key===(tf?tf.id:"_t")){ const tb = $("btab-"+st.act); if(tb) tb.textContent = titleOf(cur, st.act); } });
+      n.value = cur.vals[key] || ""; n.addEventListener("input", () => { cur.vals[key] = n.value; backupDraft(cid); if(key===(tf?tf.id:"_t")){ const tb = $("btab-"+st.act); if(tb) tb.textContent = titleOf(cur, st.act); } });
       const l = el("label",null,label); l.htmlFor = n.id; if(type==="list") l.appendChild(el("span","hint","по одному на строку")); l.appendChild(n); return [l, n];
     };
     if(!tf){ const [l, n] = mkInput(null, "_t", "Название "+noun.toLowerCase().replace(/а$/,"и").replace(/я$/,"и"), "short"); n.placeholder = "например, «Царь-рыба»"; if(planTitles.length){ n.setAttribute("list","bPlanList"); } pane.appendChild(l); }
@@ -1098,10 +1126,10 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       pane.appendChild(rm); }
     f.appendChild(pane);
     let wn = null;
-    if(wf){ wn = el("textarea"); wn.id="fWords"; wn.maxLength=2000; wn.placeholder="to come up with — придумать"; wn.value = drafts.fWords ?? fieldValueText(existing, wf); wn.addEventListener("input", () => { drafts.fWords = wn.value; });
+    if(wf){ wn = el("textarea"); wn.id="fWords"; wn.maxLength=2000; wn.placeholder="to come up with — придумать"; wn.value = drafts.fWords ?? fieldValueText(existing, wf); wn.addEventListener("input", () => { drafts.fWords = wn.value; backupDraft(cid); });
       const l = el("label",null,wf.label+" "); l.htmlFor="fWords"; l.appendChild(el("span","hint","по одному на строку: word — перевод")); l.appendChild(wn); f.appendChild(l); }
     const btns = el("div","btns left"); const save = el("button","btn primary","Сохранить отчёт"); save.type="submit"; btns.appendChild(save);
-    const endEdit = () => { editingReport.delete(cid); clearRepDrafts(); delete drafts[dId]; };
+    const endEdit = () => { editingReport.delete(cid); clearRepDrafts(); delete drafts[dId]; dropDraft(cid); };
     if(editingReport.has(cid)){ const cn = el("button","btn ghost","Отмена"); cn.type="button"; cn.addEventListener("click", () => { endEdit(); render(); }); btns.appendChild(cn); }
     let armed=false;
     if(existing){ const del = el("button","btn ghost","Удалить этот день"); del.type="button"; btns.appendChild(del);
