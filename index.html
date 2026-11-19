@@ -322,6 +322,7 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
+textarea.grow{resize:vertical;min-height:0;overflow:hidden}
 .reacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .react{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:3px 10px;font:inherit;font-size:14px;line-height:1.4;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
 .react .num{font-size:12px;font-weight:600}
@@ -573,15 +574,10 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   const PACKS = [["z1_000", "z1_001", "z1_002", "z1_003", "z1_004", "z1_005", "z1_006", "z1_007", "z1_008", "z1_009", "z1_010", "z1_011", "z1_012", "z1_013", "z1_014", "z1_015", "z1_016", "z1_017", "z1_018", "z1_019", "z1_020", "z1_021", "z1_022", "z1_023", "z1_024", "z1_025", "z1_026", "z1_027", "z1_028", "z1_029", "z1_030", "z1_031", "z1_032", "z1_033", "z1_034", "z1_035", "z1_036", "z1_037", "z1_038", "z1_039", "z1_040", "z1_041", "z1_042", "z1_043", "z1_044", "z1_045", "z1_046", "z1_047", "z1_048", "z1_049", "z1_050", "z1_051", "z1_052", "z1_053", "z1_054", "z1_055", "z1_056", "z1_057", "z1_058", "z1_059"], ["z2_000", "z2_001", "z2_002", "z2_004", "z2_005", "z2_007", "z2_008", "z2_009", "z2_010", "z2_011", "z2_012", "z2_013", "z2_015", "z2_016", "z2_017", "z2_018", "z2_019", "z2_020", "z2_021", "z2_022", "z2_023", "z2_024", "z2_025", "z2_026", "z2_027", "z2_028", "z2_029", "z2_032", "z2_033", "z2_034", "z2_035", "z2_036", "z2_038", "z2_039", "z2_040", "z2_041", "z2_042", "z2_043", "z2_044", "z2_045", "z2_046", "z2_047", "z2_048", "z2_049", "z2_051", "z2_052", "z2_053", "z2_055", "z2_056", "z2_057", "z2_058", "z2_059", "z2_060", "z2_061", "z2_062", "z2_063", "z2_064", "z2_065", "z2_066", "z2_067", "z2_068", "z2_069", "z2_070", "z2_071", "z2_072", "z2_073", "z2_074", "z2_075", "z2_076", "z2_077", "z2_078", "z2_079", "z2_080", "z2_081", "z2_082", "z2_083", "z2_084", "z2_085", "z2_086", "z2_088", "z2_089", "z2_090", "z2_091", "z2_092", "z2_093", "z2_094", "z2_095", "z2_097", "z2_098", "z2_099", "z2_100", "z2_101", "z2_102", "z2_104", "z2_105", "z2_106", "z2_107", "z2_108", "z2_110", "z2_112", "z2_113", "z2_114", "z2_115", "z2_116", "z2_117", "z2_119", "z2_120", "z2_121", "z2_122", "z2_123", "z2_125", "z2_127", "z2_128", "z2_129", "z2_130", "z2_131", "z2_132", "z2_133", "z2_134", "z2_135", "z2_136", "z2_137", "z2_138", "z2_139", "z2_140", "z2_142", "z2_143", "z2_145", "z2_146", "z2_147", "z2_148", "z2_149", "z2_152", "z2_154", "z2_155", "z2_156", "z2_157", "z2_158", "z2_159", "z2_160", "z2_161", "z2_163", "z2_164", "z2_167", "z2_169", "z2_170", "z2_171", "z2_172", "z2_173", "z2_174", "z2_177", "z2_178", "z2_179", "z2_180", "z2_181", "z2_182", "z2_183", "z2_184", "z2_185", "z2_186", "z2_187", "z2_188", "z2_189", "z2_190", "z2_191", "z2_192", "z2_193", "z2_194", "z2_195", "z2_198", "z2_199"], ["z3_000", "z3_001", "z3_002", "z3_003", "z3_004", "z3_005", "z3_006", "z3_007", "z3_008", "z3_009", "z3_010", "z3_011", "z3_012", "z3_013", "z3_014", "z3_015", "z3_016", "z3_017", "z3_018"], ["z4_000", "z4_001", "z4_002", "z4_004", "z4_005", "z4_007", "z4_008", "z4_010", "z4_012", "z4_013", "z4_014", "z4_015", "z4_016", "z4_017", "z4_018", "z4_019", "z4_020", "z4_021", "z4_022", "z4_023", "z4_024", "z4_025", "z4_026", "z4_027", "z4_028", "z4_029", "z4_030", "z4_031", "z4_032", "z4_033", "z4_034", "z4_035", "z4_036", "z4_037", "z4_038", "z4_039", "z4_040", "z4_043", "z4_044", "z4_045", "z4_046", "z4_047", "z4_048", "z4_049", "z4_050", "z4_051", "z4_052", "z4_053", "z4_054", "z4_055", "z4_056", "z4_057", "z4_058", "z4_061", "z4_062", "z4_063", "z4_064", "z4_065", "z4_066", "z4_067", "z4_068", "z4_070", "z4_071", "z4_072", "z4_073", "z4_074", "z4_075", "z4_076", "z4_077", "z4_078", "z4_079", "z4_080", "z4_081", "z4_082", "z4_083", "z4_084", "z4_085", "z4_086", "z4_087", "z4_089", "z4_090", "z4_091", "z4_093", "z4_096", "z4_097", "z4_099", "z4_100", "z4_101", "z4_102", "z4_103", "z4_105", "z4_106", "z4_107", "z4_108", "z4_109", "z4_110", "z4_111", "z4_112", "z4_113", "z4_114", "z4_115", "z4_116", "z4_118", "z4_119", "z4_120", "z4_121", "z4_122", "z4_123", "z4_124", "z4_125", "z4_126", "z4_127", "z4_128", "z4_133", "z4_134", "z4_135", "z4_137", "z4_138", "z4_139", "z4_141", "z4_142", "z4_144", "z4_145", "z4_146", "z4_147", "z4_148", "z4_149", "z4_150", "z4_151", "z4_152", "z4_153", "z4_157", "z4_158", "z4_159", "z4_160", "z4_161", "z4_162", "z4_163", "z4_164", "z4_165", "z4_166", "z4_167", "z4_168", "z4_169", "z4_170", "z4_171", "z4_172", "z4_173", "z4_175", "z4_176", "z4_177", "z4_178", "z4_179", "z4_180", "z4_181", "z4_182", "z4_183", "z4_184", "z4_185", "z4_186", "z4_187", "z4_188", "z4_190", "z4_191", "z4_192", "z4_193", "z4_195", "z4_196", "z4_197", "z4_198", "z4_199"], ["z5_000", "z5_002", "z5_003", "z5_004", "z5_005", "z5_010", "z5_011", "z5_015", "z5_017", "z5_018", "z5_020", "z5_021", "z5_022", "z5_023", "z5_024", "z5_026", "z5_027", "z5_029", "z5_030", "z5_031", "z5_033", "z5_036", "z5_037", "z5_038", "z5_039", "z5_040", "z5_041", "z5_043", "z5_044", "z5_046", "z5_048", "z5_049", "z5_050", "z5_051", "z5_052", "z5_053", "z5_055", "z5_056", "z5_057", "z5_058", "z5_060", "z5_061", "z5_062", "z5_063", "z5_064", "z5_066", "z5_067", "z5_068", "z5_069", "z5_070", "z5_072", "z5_073", "z5_074", "z5_075", "z5_076", "z5_077", "z5_078", "z5_079", "z5_080", "z5_084", "z5_085", "z5_086", "z5_087", "z5_089", "z5_090", "z5_091", "z5_092", "z5_093", "z5_094", "z5_095", "z5_098", "z5_099", "z5_100", "z5_102", "z5_104", "z5_105", "z5_106", "z5_107", "z5_108", "z5_109", "z5_110", "z5_111", "z5_112", "z5_114", "z5_115", "z5_116", "z5_117", "z5_122", "z5_123", "z5_124", "z5_126", "z5_127", "z5_128", "z5_129", "z5_130", "z5_132", "z5_135", "z5_136", "z5_137", "z5_138", "z5_139", "z5_140", "z5_141", "z5_142", "z5_143", "z5_144", "z5_145", "z5_146", "z5_147", "z5_148", "z5_151", "z5_153", "z5_154", "z5_155", "z5_157", "z5_158", "z5_159", "z5_160", "z5_161", "z5_163", "z5_164", "z5_165", "z5_166", "z5_167", "z5_168", "z5_169", "z5_170", "z5_171", "z5_172", "z5_174", "z5_175", "z5_176", "z5_177", "z5_178", "z5_179", "z5_180", "z5_183", "z5_184", "z5_185", "z5_187", "z5_188", "z5_190", "z5_191", "z5_193", "z5_195", "z5_196", "z5_197", "z5_198", "z5_199"], ["z6_000", "z6_001", "z6_002", "z6_003", "z6_004", "z6_005", "z6_006", "z6_007", "z6_008", "z6_009", "z6_010", "z6_011", "z6_012", "z6_013", "z6_014", "z6_015", "z6_016", "z6_017", "z6_018", "z6_019", "z6_020", "z6_021", "z6_022", "z6_023", "z6_024", "z6_025", "z6_026", "z6_027", "z6_028", "z6_029", "z6_030", "z6_031", "z6_032", "z6_033", "z6_034", "z6_035", "z6_036", "z6_037", "z6_038", "z6_039", "z6_040", "z6_041", "z6_042", "z6_043", "z6_044", "z6_045", "z6_046", "z6_047", "z6_048", "z6_049", "z6_050", "z6_051", "z6_052", "z6_053", "z6_054", "z6_055", "z6_056", "z6_057", "z6_058", "z6_059", "z6_060", "z6_061", "z6_062", "z6_063", "z6_064", "z6_065", "z6_066", "z6_067", "z6_068", "z6_069", "z6_070", "z6_071", "z6_072", "z6_073", "z6_074", "z6_075", "z6_076", "z6_077", "z6_078", "z6_079", "z6_080", "z6_081", "z6_082", "z6_083", "z6_084", "z6_085", "z6_086", "z6_087", "z6_088", "z6_089", "z6_090", "z6_091", "z6_092", "z6_093", "z6_094", "z6_095", "z6_096", "z6_097", "z6_098", "z6_099", "z6_100", "z6_101", "z6_102", "z6_103", "z6_104", "z6_105", "z6_106", "z6_107", "z6_108", "z6_109", "z6_110", "z6_111", "z6_112", "z6_113", "z6_114", "z6_115", "z6_116", "z6_117", "z6_118", "z6_119", "z6_120", "z6_121", "z6_122", "z6_123", "z6_124", "z6_125", "z6_126", "z6_127", "z6_128", "z6_129", "z6_130", "z6_131", "z6_132", "z6_133", "z6_134", "z6_135", "z6_136", "z6_137", "z6_138", "z6_139", "z6_140", "z6_141", "z6_142", "z6_143", "z6_144", "z6_145", "z6_146", "z6_147", "z6_148", "z6_149", "z6_150", "z6_151", "z6_152", "z6_153", "z6_154", "z6_155", "z6_156", "z6_157", "z6_158", "z6_159", "z6_160", "z6_161", "z6_162", "z6_163", "z6_164", "z6_165", "z6_166", "z6_167", "z6_168", "z6_169", "z6_170", "z6_171", "z6_172", "z6_173", "z6_174", "z6_175", "z6_176", "z6_177", "z6_178"]];
   const EMIDX = {"z1_000":0,"z1_001":0,"z1_002":0,"z1_003":0,"z1_004":0,"z1_005":0,"z1_006":0,"z1_007":0,"z1_008":0,"z1_009":0,"z1_010":0,"z1_011":0,"z1_012":0,"z1_013":0,"z1_014":0,"z1_015":0,"z1_016":0,"z1_017":0,"z1_018":0,"z1_019":0,"z1_020":0,"z1_021":0,"z1_022":0,"z1_023":0,"z1_024":0,"z1_025":0,"z1_026":0,"z1_027":0,"z1_028":0,"z1_029":0,"z1_030":0,"z1_031":0,"z1_032":0,"z1_033":0,"z1_034":0,"z1_035":0,"z1_036":0,"z1_037":0,"z1_038":0,"z1_039":0,"z1_040":0,"z1_041":0,"z1_042":0,"z1_043":0,"z1_044":0,"z1_045":0,"z1_046":0,"z1_047":0,"z1_048":0,"z1_049":0,"z1_050":0,"z1_051":0,"z1_052":0,"z1_053":0,"z1_054":0,"z1_055":0,"z1_056":0,"z1_057":0,"z1_058":0,"z1_059":0,"z2_000":1,"z2_001":1,"z2_002":1,"z2_004":1,"z2_005":1,"z2_007":1,"z2_008":1,"z2_009":1,"z2_010":1,"z2_011":1,"z2_012":1,"z2_013":1,"z2_015":1,"z2_016":1,"z2_017":1,"z2_018":1,"z2_019":1,"z2_020":1,"z2_021":1,"z2_022":1,"z2_023":1,"z2_024":1,"z2_025":1,"z2_026":1,"z2_027":1,"z2_028":1,"z2_029":1,"z2_032":1,"z2_033":1,"z2_034":1,"z2_035":1,"z2_036":1,"z2_038":1,"z2_039":1,"z2_040":1,"z2_041":1,"z2_042":1,"z2_043":1,"z2_044":1,"z2_045":1,"z2_046":1,"z2_047":1,"z2_048":1,"z2_049":1,"z2_051":1,"z2_052":1,"z2_053":1,"z2_055":1,"z2_056":1,"z2_057":1,"z2_058":1,"z2_059":1,"z2_060":1,"z2_061":1,"z2_062":1,"z2_063":1,"z2_064":1,"z2_065":1,"z2_066":1,"z2_067":1,"z2_068":1,"z2_069":1,"z2_070":1,"z2_071":1,"z2_072":1,"z2_073":1,"z2_074":1,"z2_075":1,"z2_076":1,"z2_077":1,"z2_078":1,"z2_079":1,"z2_080":1,"z2_081":1,"z2_082":1,"z2_083":1,"z2_084":1,"z2_085":1,"z2_086":1,"z2_088":1,"z2_089":1,"z2_090":1,"z2_091":1,"z2_092":1,"z2_093":1,"z2_094":1,"z2_095":1,"z2_097":1,"z2_098":1,"z2_099":1,"z2_100":1,"z2_101":1,"z2_102":1,"z2_104":1,"z2_105":1,"z2_106":1,"z2_107":1,"z2_108":1,"z2_110":1,"z2_112":1,"z2_113":1,"z2_114":1,"z2_115":1,"z2_116":1,"z2_117":1,"z2_119":1,"z2_120":1,"z2_121":1,"z2_122":1,"z2_123":1,"z2_125":1,"z2_127":1,"z2_128":1,"z2_129":1,"z2_130":1,"z2_131":1,"z2_132":1,"z2_133":1,"z2_134":1,"z2_135":1,"z2_136":1,"z2_137":1,"z2_138":1,"z2_139":1,"z2_140":1,"z2_142":1,"z2_143":1,"z2_145":1,"z2_146":1,"z2_147":1,"z2_148":1,"z2_149":1,"z2_152":1,"z2_154":1,"z2_155":1,"z2_156":1,"z2_157":1,"z2_158":1,"z2_159":1,"z2_160":1,"z2_161":1,"z2_163":1,"z2_164":1,"z2_167":1,"z2_169":1,"z2_170":1,"z2_171":1,"z2_172":1,"z2_173":1,"z2_174":1,"z2_177":1,"z2_178":1,"z2_179":1,"z2_180":1,"z2_181":1,"z2_182":1,"z2_183":1,"z2_184":1,"z2_185":1,"z2_186":1,"z2_187":1,"z2_188":1,"z2_189":1,"z2_190":1,"z2_191":1,"z2_192":1,"z2_193":1,"z2_194":1,"z2_195":1,"z2_198":1,"z2_199":1,"z3_000":2,"z3_001":2,"z3_002":2,"z3_003":2,"z3_004":2,"z3_005":2,"z3_006":2,"z3_007":2,"z3_008":2,"z3_009":2,"z3_010":2,"z3_011":2,"z3_012":2,"z3_013":2,"z3_014":2,"z3_015":2,"z3_016":2,"z3_017":2,"z3_018":2,"z4_000":3,"z4_001":3,"z4_002":3,"z4_004":3,"z4_005":3,"z4_007":3,"z4_008":3,"z4_010":3,"z4_012":3,"z4_013":3,"z4_014":3,"z4_015":3,"z4_016":3,"z4_017":3,"z4_018":3,"z4_019":3,"z4_020":3,"z4_021":3,"z4_022":3,"z4_023":3,"z4_024":3,"z4_025":3,"z4_026":3,"z4_027":3,"z4_028":3,"z4_029":3,"z4_030":3,"z4_031":3,"z4_032":3,"z4_033":3,"z4_034":3,"z4_035":3,"z4_036":3,"z4_037":3,"z4_038":3,"z4_039":3,"z4_040":3,"z4_043":3,"z4_044":3,"z4_045":3,"z4_046":3,"z4_047":3,"z4_048":3,"z4_049":3,"z4_050":3,"z4_051":3,"z4_052":3,"z4_053":3,"z4_054":3,"z4_055":3,"z4_056":3,"z4_057":3,"z4_058":3,"z4_061":3,"z4_062":3,"z4_063":3,"z4_064":3,"z4_065":3,"z4_066":3,"z4_067":3,"z4_068":3,"z4_070":3,"z4_071":3,"z4_072":3,"z4_073":3,"z4_074":3,"z4_075":3,"z4_076":3,"z4_077":3,"z4_078":3,"z4_079":3,"z4_080":3,"z4_081":3,"z4_082":3,"z4_083":3,"z4_084":3,"z4_085":3,"z4_086":3,"z4_087":3,"z4_089":3,"z4_090":3,"z4_091":3,"z4_093":3,"z4_096":3,"z4_097":3,"z4_099":3,"z4_100":3,"z4_101":3,"z4_102":3,"z4_103":3,"z4_105":3,"z4_106":3,"z4_107":3,"z4_108":3,"z4_109":3,"z4_110":3,"z4_111":3,"z4_112":3,"z4_113":3,"z4_114":3,"z4_115":3,"z4_116":3,"z4_118":3,"z4_119":3,"z4_120":3,"z4_121":3,"z4_122":3,"z4_123":3,"z4_124":3,"z4_125":3,"z4_126":3,"z4_127":3,"z4_128":3,"z4_133":3,"z4_134":3,"z4_135":3,"z4_137":3,"z4_138":3,"z4_139":3,"z4_141":3,"z4_142":3,"z4_144":3,"z4_145":3,"z4_146":3,"z4_147":3,"z4_148":3,"z4_149":3,"z4_150":3,"z4_151":3,"z4_152":3,"z4_153":3,"z4_157":3,"z4_158":3,"z4_159":3,"z4_160":3,"z4_161":3,"z4_162":3,"z4_163":3,"z4_164":3,"z4_165":3,"z4_166":3,"z4_167":3,"z4_168":3,"z4_169":3,"z4_170":3,"z4_171":3,"z4_172":3,"z4_173":3,"z4_175":3,"z4_176":3,"z4_177":3,"z4_178":3,"z4_179":3,"z4_180":3,"z4_181":3,"z4_182":3,"z4_183":3,"z4_184":3,"z4_185":3,"z4_186":3,"z4_187":3,"z4_188":3,"z4_190":3,"z4_191":3,"z4_192":3,"z4_193":3,"z4_195":3,"z4_196":3,"z4_197":3,"z4_198":3,"z4_199":3,"z5_000":4,"z5_002":4,"z5_003":4,"z5_004":4,"z5_005":4,"z5_010":4,"z5_011":4,"z5_015":4,"z5_017":4,"z5_018":4,"z5_020":4,"z5_021":4,"z5_022":4,"z5_023":4,"z5_024":4,"z5_026":4,"z5_027":4,"z5_029":4,"z5_030":4,"z5_031":4,"z5_033":4,"z5_036":4,"z5_037":4,"z5_038":4,"z5_039":4,"z5_040":4,"z5_041":4,"z5_043":4,"z5_044":4,"z5_046":4,"z5_048":4,"z5_049":4,"z5_050":4,"z5_051":4,"z5_052":4,"z5_053":4,"z5_055":4,"z5_056":4,"z5_057":4,"z5_058":4,"z5_060":4,"z5_061":4,"z5_062":4,"z5_063":4,"z5_064":4,"z5_066":4,"z5_067":4,"z5_068":4,"z5_069":4,"z5_070":4,"z5_072":4,"z5_073":4,"z5_074":4,"z5_075":4,"z5_076":4,"z5_077":4,"z5_078":4,"z5_079":4,"z5_080":4,"z5_084":4,"z5_085":4,"z5_086":4,"z5_087":4,"z5_089":4,"z5_090":4,"z5_091":4,"z5_092":4,"z5_093":4,"z5_094":4,"z5_095":4,"z5_098":4,"z5_099":4,"z5_100":4,"z5_102":4,"z5_104":4,"z5_105":4,"z5_106":4,"z5_107":4,"z5_108":4,"z5_109":4,"z5_110":4,"z5_111":4,"z5_112":4,"z5_114":4,"z5_115":4,"z5_116":4,"z5_117":4,"z5_122":4,"z5_123":4,"z5_124":4,"z5_126":4,"z5_127":4,"z5_128":4,"z5_129":4,"z5_130":4,"z5_132":4,"z5_135":4,"z5_136":4,"z5_137":4,"z5_138":4,"z5_139":4,"z5_140":4,"z5_141":4,"z5_142":4,"z5_143":4,"z5_144":4,"z5_145":4,"z5_146":4,"z5_147":4,"z5_148":4,"z5_151":4,"z5_153":4,"z5_154":4,"z5_155":4,"z5_157":4,"z5_158":4,"z5_159":4,"z5_160":4,"z5_161":4,"z5_163":4,"z5_164":4,"z5_165":4,"z5_166":4,"z5_167":4,"z5_168":4,"z5_169":4,"z5_170":4,"z5_171":4,"z5_172":4,"z5_174":4,"z5_175":4,"z5_176":4,"z5_177":4,"z5_178":4,"z5_179":4,"z5_180":4,"z5_183":4,"z5_184":4,"z5_185":4,"z5_187":4,"z5_188":4,"z5_190":4,"z5_191":4,"z5_193":4,"z5_195":4,"z5_196":4,"z5_197":4,"z5_198":4,"z5_199":4,"z6_000":5,"z6_001":5,"z6_002":5,"z6_003":5,"z6_004":5,"z6_005":5,"z6_006":5,"z6_007":5,"z6_008":5,"z6_009":5,"z6_010":5,"z6_011":5,"z6_012":5,"z6_013":5,"z6_014":5,"z6_015":5,"z6_016":5,"z6_017":5,"z6_018":6,"z6_019":6,"z6_020":6,"z6_021":6,"z6_022":6,"z6_023":6,"z6_024":6,"z6_025":6,"z6_026":6,"z6_027":6,"z6_028":6,"z6_029":6,"z6_030":6,"z6_031":6,"z6_032":6,"z6_033":6,"z6_034":6,"z6_035":6,"z6_036":6,"z6_037":6,"z6_038":6,"z6_039":6,"z6_040":6,"z6_041":6,"z6_042":7,"z6_043":7,"z6_044":7,"z6_045":7,"z6_046":7,"z6_047":7,"z6_048":7,"z6_049":7,"z6_050":7,"z6_051":7,"z6_052":7,"z6_053":7,"z6_054":7,"z6_055":7,"z6_056":7,"z6_057":7,"z6_058":7,"z6_059":7,"z6_060":7,"z6_061":8,"z6_062":8,"z6_063":8,"z6_064":8,"z6_065":8,"z6_066":8,"z6_067":8,"z6_068":8,"z6_069":8,"z6_070":8,"z6_071":8,"z6_072":8,"z6_073":8,"z6_074":8,"z6_075":8,"z6_076":9,"z6_077":9,"z6_078":9,"z6_079":9,"z6_080":9,"z6_081":9,"z6_082":9,"z6_083":9,"z6_084":9,"z6_085":9,"z6_086":9,"z6_087":9,"z6_088":9,"z6_089":9,"z6_090":9,"z6_091":9,"z6_092":9,"z6_093":9,"z6_094":9,"z6_095":10,"z6_096":10,"z6_097":10,"z6_098":10,"z6_099":10,"z6_100":10,"z6_101":10,"z6_102":10,"z6_103":10,"z6_104":10,"z6_105":10,"z6_106":10,"z6_107":10,"z6_108":10,"z6_109":10,"z6_110":10,"z6_111":11,"z6_112":11,"z6_113":11,"z6_114":11,"z6_115":11,"z6_116":11,"z6_117":11,"z6_118":11,"z6_119":11,"z6_120":11,"z6_121":11,"z6_122":11,"z6_123":11,"z6_124":11,"z6_125":11,"z6_126":11,"z6_127":12,"z6_128":12,"z6_129":12,"z6_130":12,"z6_131":12,"z6_132":12,"z6_133":12,"z6_134":12,"z6_135":12,"z6_136":12,"z6_137":12,"z6_138":12,"z6_139":12,"z6_140":12,"z6_141":12,"z6_142":12,"z6_143":12,"z6_144":12,"z6_145":12,"z6_146":12,"z6_147":12,"z6_148":12,"z6_149":12,"z6_150":12,"z6_151":12,"z6_152":13,"z6_153":13,"z6_154":13,"z6_155":13,"z6_156":13,"z6_157":13,"z6_158":13,"z6_159":13,"z6_160":13,"z6_161":13,"z6_162":13,"z6_163":13,"z6_164":13,"z6_165":13,"z6_166":13,"z6_167":13,"z6_168":13,"z6_169":13,"z6_170":13,"z6_171":14,"z6_172":14,"z6_173":14,"z6_174":14,"z6_175":14,"z6_176":14,"z6_177":14,"z6_178":14};
   const isEmojiId = (x) => typeof x==="string" && x in EMIDX;
-  const chunkLoads = {};
-  function loadChunk(ci){
-    if(!chunkLoads[ci]) chunkLoads[ci] = new Promise((res, rej) => { const sc=document.createElement("script"); sc.src=EM_BASE+"c"+ci+".js"; sc.onload=res; sc.onerror=()=>{ delete chunkLoads[ci]; rej(); }; document.head.appendChild(sc); });
-    return chunkLoads[ci];
-  }
+  // каждая эмодзи — отдельный маленький файл em/i/<id>.webp: грузится только то, что видно на экране
   function emojiImg(id){
-    const i = el("img"); i.alt=""; i.decoding="async"; const ci = EMIDX[id]; if(ci==null) return i;
-    const set = () => { const m = window.__EMO && window.__EMO[ci]; if(m && m[id]) i.src = m[id]; };
-    if(window.__EMO && window.__EMO[ci]) set(); else loadChunk(ci).then(set, ()=>{});
+    const i = el("img"); i.alt=""; i.decoding="async"; i.loading="lazy"; if(!(id in EMIDX)) return i;
+    i.src = EM_BASE+"i/"+id+".webp";
     return i;
   }
   function emojiBox(emoji, small){
@@ -621,6 +617,32 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       state.members[cid] = next; if(snap.metadata && snap.metadata.hasPendingWrites){ clearTimeout(_rt); _rt = 0; render(); } else scheduleRender();   // своя запись — сразу, чужие — пачкой
     }, () => {});
   }
+
+  // Главная: только свой документ участника (для «ты участвуешь / серия») и число участников — без чужих отчётов
+  const mineSubs = {}, memberCount = {};
+  function watchMine(cid){
+    if(!fs || !state.me || memberSubs[cid] || mineSubs[cid+"|"+state.me]) return;
+    const me = state.me;
+    mineSubs[cid+"|"+me] = fs.doc("challenges/"+cid+"/members/"+me).onSnapshot(d => {
+      if(memberSubs[cid]) return;   // уже открыт челлендж целиком — там свежее
+      state.members[cid] = d.exists ? { [me]: d.data() } : {}; scheduleRender();
+    }, () => {});
+  }
+  function countMembers(cid){
+    if(cid in memberCount) return;
+    try{ const c = Number(localStorage.getItem("mcount:"+cid)); if(c) memberCount[cid] = c; }catch(e){}
+    if(!(cid in memberCount)) memberCount[cid] = null;
+    const cfg = window.FIREBASE_CONFIG || {};
+    fetch("https://firestore.googleapis.com/v1/projects/"+cfg.projectId+"/databases/(default)/documents/challenges/"+encodeURIComponent(cid)+":runAggregationQuery?key="+cfg.apiKey, {
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ structuredAggregationQuery: { structuredQuery: { from: [{ collectionId: "members" }] }, aggregations: [{ alias:"n", count:{} }] } })
+    }).then(r => r.ok ? r.json() : null).then(j => {
+      const v = j && j[0] && j[0].result && j[0].result.aggregateFields && j[0].result.aggregateFields.n;
+      const n = v ? Number(v.integerValue) : NaN;
+      if(isFinite(n)){ memberCount[cid] = n; try{ localStorage.setItem("mcount:"+cid, String(n)); }catch(e){} scheduleRender(); }
+    }).catch(() => {});
+  }
+  const membersN = (cid) => memberSubs[cid] ? memberIds(cid).length : memberCount[cid];
 
   // ---------- реакции на отчёты: challenges/{cid}/reacts/{reactorUid} = { m: { "<автор>_<YYYY-MM-DD>": { like:true, ok:true, fire:true } } } ----------
   const reactSubs = {}; state.reacts = state.reacts || {};
@@ -664,7 +686,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   // мгновенно наверх и сразу сворачиваем; короткое проявление вместо долгой прокрутки — колесо мыши ничему не мешает
   // словарь сворачиваем и остаёмся у его начала
   function collapseDict(){
-    showAllDict.clear(); render();
+    showAllDict.clear(); Object.keys(dictShown).forEach(k => delete dictShown[k]); render();
     const d = $("dictPanel"); if(d) window.scrollTo(0, Math.max(0, d.getBoundingClientRect().top + window.scrollY - 12));
     const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
   }
@@ -674,11 +696,17 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const t = document.querySelector("#dictPanel .trainer") || $("dictPanel"); if(t) window.scrollTo(0, Math.max(0, t.getBoundingClientRect().top + window.scrollY - 12));
     const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
   }
+  const FIELD_MAX = 20000;   // поля отчёта: практически без ограничения (лимит документа в базе ~1 МБ)
+  const FEED_STEP = 10, feedShown = {}, DICT_STEP = 30, dictShown = {};
   function collapseFeeds(){
-    window.scrollTo(0, 0); showAllFeed.clear(); render(); window.scrollTo(0, 0);
+    window.scrollTo(0, 0); showAllFeed.clear(); Object.keys(feedShown).forEach(k => delete feedShown[k]); render(); window.scrollTo(0, 0);
     const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
   }
+  const growTa = (t) => { t.style.height = "auto"; t.style.height = (t.scrollHeight+2)+"px"; };
+  const growAll = () => document.querySelectorAll("textarea.grow").forEach(growTa);
+  document.addEventListener("input", (e) => { const t = e.target; if(t && t.classList && t.classList.contains("grow")) growTa(t); });
   function render(){
+    setTimeout(growAll, 0);
     const ae = document.activeElement;
     const keep = ae && ae.id && $("app").contains(ae) ? { id:ae.id, v:ae.value, s:ae.selectionStart, e:ae.selectionEnd } : null;
     const scroll = window.scrollY;
@@ -706,12 +734,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const sec = el("section","grid-cards");
     const ids = Object.keys(state.challenges).sort((a,b) => String(state.challenges[b].createdAt||"").localeCompare(String(state.challenges[a].createdAt||"")));
     ids.forEach(cid => {
-      watchMembers(cid);
+      watchMine(cid); countMembers(cid);
       const c = state.challenges[cid];
       const a = el("a","ccard"); a.href = "#c-"+cid;
       const top = el("div","ccard-top");
       top.appendChild(el("span","pill-tag", c.topic || "Челлендж"));
-      const n = memberIds(cid).length; top.appendChild(el("span","muted num", n+" "+plural(n,"участник","участника","участников")));
+      const n = membersN(cid); top.appendChild(el("span","muted num", n==null ? "…" : n+" "+plural(n,"участник","участника","участников")));
       a.appendChild(top);
       a.appendChild(el("h2","ccard-title", c.title || "Без названия"));
       if(c.description) a.appendChild(el("p","ccard-desc", c.description));
@@ -922,8 +950,17 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!keys.length) col.appendChild(el("div","empty", mine ? "Пока пусто. Запиши первый отчёт выше." : "Отчётов пока нет."));
     else {
       const f = el("div","feed"); const key2 = cid+"/"+uid; const all = showAllFeed.has(key2);
-      (all ? keys : keys.slice(0,1)).forEach(k => f.appendChild(entryNode(cid, uid, k, days[k]))); col.appendChild(f);
-      if(keys.length>1){ const b = el("button","btn more", all ? "Свернуть отчёты" : "Показать предыдущие отчёты ("+(keys.length-1)+")"); b.type="button"; b.addEventListener("click", () => { if(all) collapseFeeds(); else { showAllFeed.add(key2); render(); } }); col.appendChild(b); }
+      // отчёты показываем порциями: последний + по FEED_STEP за нажатие
+      const shown = all ? Math.min(keys.length, feedShown[key2] || 1+FEED_STEP) : 1;
+      keys.slice(0, shown).forEach(k => f.appendChild(entryNode(cid, uid, k, days[k]))); col.appendChild(f);
+      if(keys.length>1){
+        if(!all){ const b = el("button","btn more","Показать предыдущие отчёты ("+(keys.length-1)+")"); b.type="button"; b.addEventListener("click", () => { showAllFeed.add(key2); feedShown[key2] = 1+FEED_STEP; render(); }); col.appendChild(b); }
+        else {
+          const row = el("div","btns left");
+          if(shown < keys.length){ const left = keys.length-shown, more = el("button","btn more","Загрузить ещё "+Math.min(FEED_STEP,left)+" (осталось "+left+")"); more.type="button"; more.addEventListener("click", () => { feedShown[key2] = shown+FEED_STEP; render(); }); row.appendChild(more); }
+          const b = el("button","btn ghost","Свернуть отчёты"); b.type="button"; b.addEventListener("click", collapseFeeds); row.appendChild(b); col.appendChild(row);
+        }
+      }
     }
     return col;
   }
@@ -1021,8 +1058,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(noun) return blockReportForm(cid, noun);
     const ctrls = [];
     fieldsOf(cid).forEach(fd => {
-      const id = fieldInputId(fd); const multi = fd.type==="long" || fd.type==="list";
-      const n = multi ? el("textarea") : el("input"); n.id = id; n.maxLength = multi ? 2000 : 200;
+      const id = fieldInputId(fd);
+      const multi = fd.type==="long" || fd.type==="list" || fd.type==="short"; const n = multi ? el("textarea") : el("input"); n.id = id; n.maxLength = FIELD_MAX; if(fd.type==="short"){ n.rows = 1; n.classList.add("grow"); }
       if(!multi){ n.type = fd.type==="number" ? "number" : "text"; if(fd.type==="number"){ n.step="any"; n.inputMode="decimal"; } }
       if(fd.id==="text") n.placeholder="Что сделал сегодня"; if(fd.id==="words") n.placeholder="to come up with — придумать";
       n.value = drafts[id] ?? fieldValueText(existing, fd);
@@ -1057,13 +1094,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const v = {}, fsnap = []; const prevV = prev && prev.v && typeof prev.v==="object" ? prev.v : {};
       ctrls.forEach(([fd, n]) => {
         const raw = n.value.trim();
-        if(fd.id==="text"){ rec.text = raw.slice(0,2000); return; }
+        if(fd.id==="text"){ rec.text = raw.slice(0,FIELD_MAX); return; }
         if(fd.id==="words"){ rec.words = parseWords(n.value); return; }
         fsnap.push({ id:fd.id, label:fd.label, type:fd.type });
         if(!raw){ if(fd.id in prevV) v[fd.id] = FV.delete(); return; }
         if(fd.type==="number"){ const num = Number(raw.replace(",",".")); if(isFinite(num)) v[fd.id] = num; }
         else if(fd.type==="list") v[fd.id] = raw.split("\n").map(x => x.trim()).filter(Boolean).slice(0,60).map(x => x.slice(0,200));
-        else v[fd.id] = raw.slice(0,2000);
+        else v[fd.id] = raw.slice(0,FIELD_MAX);
       });
       if(prev && Array.isArray(prev.f)) prev.f.forEach(pf => { if(pf && pf.id && !fsnap.some(x => x.id===pf.id)) fsnap.push({ id:String(pf.id), label:str(pf.label,60), type:str(pf.type,10)||"short" }); });
       if(fsnap.length) rec.f = fsnap; if(Object.keys(v).length) rec.v = v;
@@ -1153,8 +1190,9 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const cur = st.blocks[st.act]; const pane = el("div","bpane");
     const planTitles = (() => { const out = []; try{ monthItems(cid, state.me, monthKey()).forEach(x => out.push(x.title)); }catch(e){} return out; })();
     const mkInput = (fd, key, label, type) => {
-      const multi = type==="long" || type==="list";
-      const n = multi ? el("textarea") : el("input"); n.id = "bf-"+st.act+"-"+key; n.maxLength = multi ? 2000 : 200;
+      const isT = key===(tf ? tf.id : "_t"); if(isT && type==="short") type = "title";   // название — однострочное поле с подсказками из плана
+      const multi = type==="long" || type==="list" || type==="short";
+      const n = multi ? el("textarea") : el("input"); n.id = "bf-"+st.act+"-"+key; n.maxLength = type==="title" ? 200 : FIELD_MAX; if(type==="short"){ n.rows = 1; n.classList.add("grow"); }
       if(!multi){ n.type = type==="number" ? "number" : "text"; if(type==="number"){ n.step="any"; n.inputMode="decimal"; } }
       n.value = cur.vals[key] || ""; n.addEventListener("input", () => { cur.vals[key] = n.value; backupDraft(cid); if(key===(tf?tf.id:"_t")){ const tb = $("btab-"+st.act); if(tb) tb.textContent = titleOf(cur, st.act); } });
       const l = el("label",null,label); l.htmlFor = n.id; if(type==="list") l.appendChild(el("span","hint","по одному на строку")); l.appendChild(n); return [l, n];
@@ -1192,12 +1230,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       rec.b = filled.map((b, i) => { const o = { t: titleOf(b, i).slice(0,200), v:{} }; if(tf) o.tf = tf.id;
         bf.forEach(fd => { const raw = String(b.vals[fd.id]||"").trim(); if(!raw) return;
           if(fd===tf) return;
-          if(fd.id==="text"){ o.text = raw.slice(0,2000); return; }
+          if(fd.id==="text"){ o.text = raw.slice(0,FIELD_MAX); return; }
           if(fd.type==="number"){ const num = Number(raw.replace(",",".")); if(isFinite(num)) o.v[fd.id] = num; }
           else if(fd.type==="list") o.v[fd.id] = raw.split("\n").map(x => x.trim()).filter(Boolean).slice(0,60).map(x => x.slice(0,200));
-          else o.v[fd.id] = raw.slice(0,2000); });
+          else o.v[fd.id] = raw.slice(0,FIELD_MAX); });
         return o; });
-      rec.text = rec.b.map(o => o.t + (o.text ? "\n"+o.text : "")).join("\n\n").slice(0,2000);
+      rec.text = rec.b.map(o => o.t + (o.text ? "\n"+o.text : "")).join("\n\n").slice(0,FIELD_MAX);
       rec.f = bf.filter(fd => fd.id!=="text").map(fd => ({ id:fd.id, label:fd.label, type:fd.type }));
       rec.v = FV.delete();
       if(wn) rec.words = parseWords(wn.value);
@@ -1218,10 +1256,10 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(Array.isArray(r.b) && r.b.length){
       r.b.slice(0,BLOCK_MAX).forEach((b, i) => { if(!b || typeof b!=="object") return;
         const bx = el("div","rblock"); bx.appendChild(el("div","rbtitle", str(b.t,200) || ("Блок "+(i+1))));
-        if(typeof b.text==="string" && b.text) bx.appendChild(el("div","text",b.text.slice(0,2000)));
+        if(typeof b.text==="string" && b.text) bx.appendChild(el("div","text",b.text.slice(0,FIELD_MAX)));
         const bv = b.v && typeof b.v==="object" ? b.v : {};
         fxs0.forEach(fd => { if(!fd || typeof fd!=="object" || fd.id===b.tf) return; const val = bv[fd.id]; if(val==null || val==="" || (Array.isArray(val) && !val.length)) return;
-          const row = el("div","fx"); row.append(el("b",null,str(fd.label,60)+": "), document.createTextNode(Array.isArray(val) ? val.slice(0,60).map(x => String(x).slice(0,200)).join(" · ") : String(val).slice(0,2000))); bx.appendChild(row); });
+          const row = el("div","fx"); row.append(el("b",null,str(fd.label,60)+": "), document.createTextNode(Array.isArray(val) ? val.slice(0,60).map(x => String(x).slice(0,200)).join(" · ") : String(val).slice(0,FIELD_MAX))); bx.appendChild(row); });
         e.appendChild(bx); });
       const ws0 = normalizeWords(r.words);
       if(ws0.length){ const w = el("div","words"); ws0.slice(0,60).forEach(x => { const s=el("span","word"); s.appendChild(el("b",null,String(x.en||""))); if(x.ru) s.appendChild(document.createTextNode(" — "+String(x.ru))); w.appendChild(s); }); e.appendChild(w); }
@@ -1241,7 +1279,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const isTitle = (o) => o && typeof o==="object" && /книг|назван|автор/i.test(String(o.label||""));
     order.sort((a,b) => (isTitle(b)?1:0) - (isTitle(a)?1:0));
     const putFx = (fd) => { const val = vv[fd.id]; if(val==null || val==="" || (Array.isArray(val) && !val.length)) return;
-      const row = el("div","fx"); row.append(el("b",null,str(fd.label,60)+": "), document.createTextNode(Array.isArray(val) ? val.slice(0,60).map(x => String(x).slice(0,200)).join(" · ") : String(val).slice(0,2000))); e.appendChild(row); };
+      const row = el("div","fx"); row.append(el("b",null,str(fd.label,60)+": "), document.createTextNode(Array.isArray(val) ? val.slice(0,60).map(x => String(x).slice(0,200)).join(" · ") : String(val).slice(0,FIELD_MAX))); e.appendChild(row); };
     order.forEach(o => {
       if(!o) return;
       if(o==="text"){ if(typeof r.text==="string" && r.text) e.appendChild(el("div","text",r.text)); return; }
@@ -1629,7 +1667,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     ["Слово","Перевод","Кто добавил","Когда",""].forEach(h=>hr.appendChild(el("th",null,h))); const th=el("thead"); th.appendChild(hr); tbl.appendChild(th);
     const tb = el("tbody");
     const dictAll = showAllDict.has(cid);
-    (dictAll ? words : words.slice(0,5)).forEach(w => {
+    const dShown = dictAll ? Math.min(words.length, dictShown[cid] || DICT_STEP) : 5;
+    words.slice(0, dShown).forEach(w => {
       const tr = paint(el("tr"), cid, w.uid); const who = el("td"); who.appendChild(paint(el("span","who-chip",nameOf(cid, w.uid)), cid, w.uid));
       const wk = wordKey(w.en); const list = (w.keys||[wk]).flatMap(kk => commentsFor(cid, kk)).sort((a,b)=>a.at.localeCompare(b.at)); const open = openComments.has(cid+"|"+wk);
       const cb = el("button","cbtn"+(list.length?" has":""), list.length ? "💬 "+list.length : "💬"); cb.type="button"; cb.setAttribute("aria-expanded",String(open)); cb.setAttribute("aria-label","Комментарии к слову "+w.en);
@@ -1655,8 +1694,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       }
     });
     tbl.appendChild(tb); wrap.appendChild(tbl); v.appendChild(wrap);
-    if(words.length>5){ const b = el("button","btn more", dictAll ? "Свернуть словарь" : "Развернуть словарь полностью ("+words.length+")"); b.type="button";
-      b.addEventListener("click", () => { if(dictAll) collapseDict(); else { showAllDict.add(cid); render(); } }); v.appendChild(b); }
+    if(words.length>5){
+      if(!dictAll){ const b = el("button","btn more","Развернуть словарь ("+words.length+")"); b.type="button"; b.addEventListener("click", () => { showAllDict.add(cid); dictShown[cid] = DICT_STEP; render(); }); v.appendChild(b); }
+      else { const row = el("div","btns left");
+        if(dShown < words.length){ const left = words.length-dShown, more = el("button","btn more","Загрузить ещё "+Math.min(DICT_STEP,left)+" (осталось "+left+")"); more.type="button"; more.addEventListener("click", () => { dictShown[cid] = dShown+DICT_STEP; render(); }); row.appendChild(more); }
+        const b = el("button","btn ghost","Свернуть словарь"); b.type="button"; b.addEventListener("click", collapseDict); row.appendChild(b); v.appendChild(row); }
+    }
     v.appendChild(shareNode(cid, words));
     return v;
   }

@@ -1,15 +1,16 @@
 // Минимальный service worker: делает сайт устанавливаемым и кэширует файлы эмодзи и иконки.
-const CACHE = "obsession-v45";
+const CACHE = "obsession-v46";
+const EM_CACHE = "obsession-em-v1";   // эмодзи и иконки не меняются — этот кэш не сбрасывается при обновлениях сайта
 self.addEventListener("install", e => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(
-  caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())
+  caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== EM_CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())
 ));
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
   // эмодзи и иконки почти не меняются: сначала из кэша
   if (/\/(em|icons)\//.test(url.pathname)) {
-    e.respondWith(caches.open(CACHE).then(c => c.match(e.request).then(r => r || fetch(e.request).then(res => { if (res.ok) c.put(e.request, res.clone()); return res; }))));
+    e.respondWith(caches.open(EM_CACHE).then(c => c.match(e.request).then(r => r || fetch(e.request).then(res => { if (res.ok) c.put(e.request, res.clone()); return res; }))));
     return;
   }
   // страница: всегда свежая из сети, кэш только если нет интернета
