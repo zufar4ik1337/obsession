@@ -1296,7 +1296,15 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const v = bags[name].pop(); bags[name+"_last"] = v; return v;
   }
   const nextPraise = () => fromBag("praise", PRAISE), nextOops = () => fromBag("oops", OOPS);
-  const repeatGap = (n) => Math.max(0, Math.min(n-1, Math.floor(n*0.8)));
+  // Круг колоды: карточка не повторится, пока не пройдёт ВСЯ колода; новый круг — в новом случайном порядке
+  const cycleMem = {};
+  function cycleOf(name){ if(!cycleMem[name]){ let a=[]; try{ a = JSON.parse(localStorage.getItem("cycle:"+name)||"[]"); }catch(e){} cycleMem[name] = new Set(Array.isArray(a) ? a : []); } return cycleMem[name]; }
+  function saveCycle(name){ try{ localStorage.setItem("cycle:"+name, JSON.stringify([...cycleMem[name]])); }catch(e){} }
+  function pickCycle(name, deck, keyOf, recentName){
+    const seen = cycleOf(name); let rest = deck.filter(x => !seen.has(keyOf(x)));
+    if(!rest.length){ seen.clear(); const last = recentOf(recentName).slice(-1)[0]; rest = deck.length > 1 ? deck.filter(x => keyOf(x)!==last) : deck; }
+    const it = rest[Math.floor(Math.random()*rest.length)]; seen.add(keyOf(it)); saveCycle(name); pushRecent(recentName, keyOf(it)); return it;
+  }
   // ---------- неправильные глаголы: base | past | participle | перевод ----------
   const VERBS = [["arise","arose","arisen","возникать"],["awake","awoke","awoken","просыпаться"],["be","was/were","been","быть"],["bear","bore","born/borne","нести; рождать"],["beat","beat","beaten","бить"],["become","became","become","становиться"],["begin","began","begun","начинать"],["bend","bent","bent","гнуть"],["bet","bet","bet","держать пари"],["bind","bound","bound","связывать"],["bite","bit","bitten","кусать"],["bleed","bled","bled","кровоточить"],["blow","blew","blown","дуть"],["break","broke","broken","ломать"],["breed","bred","bred","разводить"],["bring","brought","brought","приносить"],["broadcast","broadcast","broadcast","транслировать"],["build","built","built","строить"],["burn","burnt/burned","burnt/burned","гореть, жечь"],["burst","burst","burst","лопаться"],["buy","bought","bought","покупать"],["catch","caught","caught","ловить"],["choose","chose","chosen","выбирать"],["cling","clung","clung","цепляться"],["come","came","come","приходить"],["cost","cost","cost","стоить"],["creep","crept","crept","ползать"],["cut","cut","cut","резать"],["deal","dealt","dealt","иметь дело"],["dig","dug","dug","копать"],["do","did","done","делать"],["draw","drew","drawn","рисовать; тянуть"],["dream","dreamt/dreamed","dreamt/dreamed","мечтать; видеть сны"],["drink","drank","drunk","пить"],["drive","drove","driven","водить машину"],["eat","ate","eaten","есть"],["fall","fell","fallen","падать"],["feed","fed","fed","кормить"],["feel","felt","felt","чувствовать"],["fight","fought","fought","драться, бороться"],["find","found","found","находить"],["flee","fled","fled","убегать, спасаться"],["fly","flew","flown","летать"],["forbid","forbade","forbidden","запрещать"],["forget","forgot","forgotten","забывать"],["forgive","forgave","forgiven","прощать"],["freeze","froze","frozen","замерзать"],["get","got","got/gotten","получать"],["give","gave","given","давать"],["go","went","gone","идти"],["grind","ground","ground","молоть"],["grow","grew","grown","расти"],["hang","hung","hung","висеть, вешать"],["have","had","had","иметь"],["hear","heard","heard","слышать"],["hide","hid","hidden","прятать"],["hit","hit","hit","ударять"],["hold","held","held","держать"],["hurt","hurt","hurt","причинять боль"],["keep","kept","kept","хранить, держать"],["kneel","knelt","knelt","становиться на колени"],["know","knew","known","знать"],["lay","laid","laid","класть"],["lead","led","led","вести"],["lean","leant/leaned","leant/leaned","опираться"],["learn","learnt/learned","learnt/learned","учить"],["leave","left","left","покидать, оставлять"],["lend","lent","lent","одалживать"],["let","let","let","позволять"],["lie","lay","lain","лежать"],["light","lit","lit","зажигать"],["lose","lost","lost","терять"],["make","made","made","делать, создавать"],["mean","meant","meant","значить"],["meet","met","met","встречать"],["mistake","mistook","mistaken","ошибаться"],["overcome","overcame","overcome","преодолевать"],["pay","paid","paid","платить"],["prove","proved","proven/proved","доказывать"],["put","put","put","класть"],["quit","quit","quit","бросать, уходить"],["read","read","read","читать"],["ride","rode","ridden","ездить верхом"],["ring","rang","rung","звонить"],["rise","rose","risen","подниматься"],["run","ran","run","бежать"],["say","said","said","сказать"],["see","saw","seen","видеть"],["seek","sought","sought","искать"],["sell","sold","sold","продавать"],["send","sent","sent","посылать"],["set","set","set","устанавливать"],["shake","shook","shaken","трясти"],["shine","shone","shone","сиять"],["shoot","shot","shot","стрелять"],["show","showed","shown","показывать"],["shrink","shrank","shrunk","сжиматься"],["shut","shut","shut","закрывать"],["sing","sang","sung","петь"],["sink","sank","sunk","тонуть"],["sit","sat","sat","сидеть"],["sleep","slept","slept","спать"],["slide","slid","slid","скользить"],["smell","smelt/smelled","smelt/smelled","пахнуть, нюхать"],["speak","spoke","spoken","говорить"],["speed","sped","sped","мчаться"],["spell","spelt/spelled","spelt/spelled","писать по буквам"],["spend","spent","spent","тратить, проводить время"],["spill","spilt/spilled","spilt/spilled","проливать"],["spin","spun","spun","вращать"],["spit","spat","spat","плевать"],["split","split","split","раскалывать"],["spoil","spoilt/spoiled","spoilt/spoiled","портить"],["spread","spread","spread","распространять"],["spring","sprang","sprung","прыгать"],["stand","stood","stood","стоять"],["steal","stole","stolen","воровать"],["stick","stuck","stuck","приклеивать"],["sting","stung","stung","жалить"],["stink","stank","stunk","вонять"],["strike","struck","struck","ударять, бастовать"],["strive","strove","striven","стремиться"],["swear","swore","sworn","клясться, ругаться"],["sweep","swept","swept","мести"],["swim","swam","swum","плавать"],["swing","swung","swung","качаться"],["take","took","taken","брать"],["teach","taught","taught","учить, преподавать"],["tear","tore","torn","рвать"],["tell","told","told","рассказывать"],["think","thought","thought","думать"],["throw","threw","thrown","бросать"],["understand","understood","understood","понимать"],["undertake","undertook","undertaken","предпринимать"],["upset","upset","upset","расстраивать"],["wake","woke","woken","просыпаться, будить"],["wear","wore","worn","носить (одежду)"],["weep","wept","wept","плакать"],["win","won","won","побеждать"],["wind","wound","wound","заводить; извиваться"],["withdraw","withdrew","withdrawn","снимать (деньги); отступать"],["write","wrote","written","писать"]].map(([b,p,pp,ru]) => ({ b, p:p.replace(/\//g," / "), pp:pp.replace(/\//g," / "), ru, key:"v:"+b }));
   const vt = { mode:"all", dir:"ru", cur:null, phase:"ask", flash:"", flashOk:true, flashT:null };
@@ -1326,11 +1334,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!deck.length){ card.appendChild(el("div","muted","Ошибок нет — всё разобрано.")); box.appendChild(card); if(me) box.appendChild(myProgressNode("verbs", VERBS.map(v => ({ en:v.b+" — "+v.p+" — "+v.pp, ru:v.ru, key:v.key })))); return box; }
     let v = deck.find(x => x.key===vt.cur);
     if(!v){
-      const block = new Set(recentOf("verbs").slice(-repeatGap(deck.length)));
-      const fresh = deck.filter(x => !block.has(x.key));
-      const unlearned = fresh.filter(x => !isLearned(progOf("verbs", x.key)));
-      const src = unlearned.length ? unlearned : (fresh.length ? fresh : deck);
-      v = src[Math.floor(Math.random()*src.length)]; pushRecent("verbs", v.key); vt.cur = v.key; vt.phase = "ask";
+      v = pickCycle("verbs/"+vt.mode, deck, x => x.key, "verbs"); vt.cur = v.key; vt.phase = "ask";
     }
     const p = progOf("verbs", v.key);
     card.appendChild(el("div","hint", vt.dir==="ru" ? "Как это по-английски? Назови все 3 формы" : "Назови 2-ю и 3-ю формы"));
@@ -1443,11 +1447,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!deck.length){ card.appendChild(el("div","muted","Ошибок нет — всё разобрано.")); box.appendChild(card); if(me) box.appendChild(myProgressNode(kind, G.items.map(x => ({ en:plainEn(x.en), ru:x.ru, key:x.key })))); return box; }
     let it = deck.find(x => x.key===S.cur);
     if(!it){
-      const block = new Set(recentOf(kind).slice(-repeatGap(deck.length)));
-      const fresh = deck.filter(x => !block.has(x.key));
-      const unlearned = fresh.filter(x => !isLearned(progOf(kind, x.key)));
-      const src = unlearned.length ? unlearned : (fresh.length ? fresh : deck);
-      it = src[Math.floor(Math.random()*src.length)]; pushRecent(kind, it.key); S.cur = it.key; S.phase = "ask";
+      it = pickCycle(kind+"/"+S.mode+"/"+(S.topic||"all"), deck, x => x.key, kind); S.cur = it.key; S.phase = "ask";
     }
     const p = progOf(kind, it.key);
     const isArt = kind==="art";
@@ -1510,14 +1510,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     }
     let w = deck.find(x => wordKey(x.en)===tr.cur);
     if(!w){
-      // слово не повторяется, пока не пройдут 80% колоды
-      const recent = recentOf(cid); const gap = repeatGap(deck.length);
-      const block = new Set(recent.slice(-gap));
-      const fresh = deck.filter(x => !block.has(wordKey(x.en)));
-      const unlearned = fresh.filter(x => !isLearned(progOf(cid, wordKey(x.en))));
-      const src = unlearned.length ? unlearned : (fresh.length ? fresh : deck);
-      w = src[Math.floor(Math.random()*src.length)];
-      pushRecent(cid, wordKey(w.en)); tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
+      // слово не повторяется, пока не пройдёт вся колода; потом новый круг в случайном порядке
+      w = pickCycle(cid+"/"+tr.mode, deck, x => wordKey(x.en), cid); tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
     }
     const wk = wordKey(w.en);
     const question = tr.dir==="ru2en" ? w.ru : w.en, target = tr.dir==="ru2en" ? w.en : w.ru;
