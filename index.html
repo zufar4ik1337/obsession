@@ -322,6 +322,11 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
+.reacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.react{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:3px 10px;font:inherit;font-size:14px;line-height:1.4;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
+.react .num{font-size:12px;font-weight:600}
+.react.on{background:#f2f2f2;color:#111;border-color:#f2f2f2}
+.react:disabled{cursor:default;opacity:.8}
 .entry .cards-fx{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:2px;align-items:baseline}
 .entry .cards-fx .cf-label{grid-column:1;align-self:start}
 .entry .cards-fx .cf-item{grid-column:2}
@@ -609,11 +614,45 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   let _rt = 0; function scheduleRender(){ if(_rt) return; _rt = setTimeout(() => { _rt = 0; render(); }, 40); }   // пачка снапшотов → один render
   const memberSubs = {};
   function watchMembers(cid){
+    watchReacts(cid);
     if(!fs || memberSubs[cid]) return;
     memberSubs[cid] = fs.collection("challenges/"+cid+"/members").onSnapshot(snap => {
       const next = {}; snap.docs.forEach(d => { const v=d.data(); if(v && typeof v==="object") next[d.id]=v; });
       state.members[cid] = next; if(snap.metadata && snap.metadata.hasPendingWrites){ clearTimeout(_rt); _rt = 0; render(); } else scheduleRender();   // своя запись — сразу, чужие — пачкой
     }, () => {});
+  }
+
+  // ---------- реакции на отчёты: challenges/{cid}/reacts/{reactorUid} = { m: { "<автор>_<YYYY-MM-DD>": { like:true, ok:true, fire:true } } } ----------
+  const reactSubs = {}; state.reacts = state.reacts || {};
+  function watchReacts(cid){
+    if(!fs || reactSubs[cid]) return;
+    reactSubs[cid] = fs.collection("challenges/"+cid+"/reacts").onSnapshot(snap => {
+      const next = {}; snap.docs.forEach(d => { const v = d.data(); if(v && v.m && typeof v.m==="object") next[d.id] = v.m; });
+      state.reacts[cid] = next; scheduleRender();
+    }, () => {});
+  }
+  const REACTS = [["like","👍","Лайк"],["ok","👌","Класс"],["fire","🔥","Огонь"]];
+  function reactBar(cid, author, day){
+    const key = author+"_"+day, all = state.reacts[cid] || {};
+    const bar = el("div","reacts"); const canReact = !!state.me && isMember(cid);
+    REACTS.forEach(([id, emo, name]) => {
+      const who = Object.keys(all).filter(u => all[u] && all[u][key] && all[u][key][id]);
+      const mine = !!state.me && who.includes(state.me);
+      if(!canReact && !who.length) return;
+      const b = el("button","react"+(mine?" on":"")); b.type="button";
+      b.append(document.createTextNode(emo), who.length ? el("span","num", String(who.length)) : document.createTextNode(""));
+      b.title = name + (who.length ? ": "+who.map(u => nameOf(cid, u)).join(", ") : "");
+      b.setAttribute("aria-label", name+(who.length ? ", "+who.length : "")); b.setAttribute("aria-pressed", String(mine));
+      if(!canReact) b.disabled = true;
+      else b.addEventListener("click", async () => {
+        b.disabled = true;
+        try{ await fs.doc("challenges/"+cid+"/reacts/"+state.me).set({ m: { [key]: { [id]: mine ? FV.delete() : true } } }, { merge:true }); }
+        catch(e){ setStatus(explain(e), true); }
+        b.disabled = false;
+      });
+      bar.appendChild(b);
+    });
+    return bar.childNodes.length ? bar : null;
   }
 
   // ---------- rendering (with focus preservation) ----------
@@ -1187,15 +1226,31 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const ws0 = normalizeWords(r.words);
       if(ws0.length){ const w = el("div","words"); ws0.slice(0,60).forEach(x => { const s=el("span","word"); s.appendChild(el("b",null,String(x.en||""))); if(x.ru) s.appendChild(document.createTextNode(" — "+String(x.ru))); w.appendChild(s); }); e.appendChild(w); }
       if(cl) e.appendChild(cl);
+      { const rb = reactBar(cid, uid, k); if(rb) e.appendChild(rb); }
       return e;
     }
-    if(typeof r.text==="string" && r.text) e.appendChild(el("div","text",r.text));
-    const ws = normalizeWords(r.words);
-    if(ws.length){ const w = el("div","words"); ws.slice(0,60).forEach(x => { if(!x||typeof x!=="object") return; const s=el("span","word"); s.appendChild(el("b",null,String(x.en||""))); if(x.ru) s.appendChild(document.createTextNode(" — "+String(x.ru))); w.appendChild(s); }); e.appendChild(w); }
+    // порядок — как поля в форме отчёта челленджа (короткие поля вроде «Какую книгу читаешь» — первыми, если стоят первыми в форме)
     const fxs = Array.isArray(r.f) ? r.f : []; const vv = r.v && typeof r.v==="object" ? r.v : {};
-    fxs.forEach(fd => { if(!fd || typeof fd!=="object") return; const val = vv[fd.id]; if(val==null || val==="" || (Array.isArray(val) && !val.length)) return;
-      const row = el("div","fx"); row.append(el("b",null,str(fd.label,60)+": "), document.createTextNode(Array.isArray(val) ? val.slice(0,60).map(x => String(x).slice(0,200)).join(" · ") : String(val).slice(0,2000))); e.appendChild(row); });
+    const byId = {}; fxs.forEach(fd => { if(fd && typeof fd==="object" && fd.id) byId[fd.id] = fd; });
+    const order = []; const seenF = new Set();
+    fieldsOf(cid).forEach(fd => { if(seenF.has(fd.id)) return; seenF.add(fd.id); order.push(fd.id==="text" || fd.id==="words" ? fd.id : (byId[fd.id] || null)); });
+    if(!seenF.has("text")) order.unshift("text");
+    fxs.forEach(fd => { if(fd && fd.id && !seenF.has(fd.id)){ seenF.add(fd.id); order.push(fd); } });
+    if(!seenF.has("words")) order.push("words");
+    // поле с названием книги/темы — всегда первым
+    const isTitle = (o) => o && typeof o==="object" && /книг|назван|автор/i.test(String(o.label||""));
+    order.sort((a,b) => (isTitle(b)?1:0) - (isTitle(a)?1:0));
+    const putFx = (fd) => { const val = vv[fd.id]; if(val==null || val==="" || (Array.isArray(val) && !val.length)) return;
+      const row = el("div","fx"); row.append(el("b",null,str(fd.label,60)+": "), document.createTextNode(Array.isArray(val) ? val.slice(0,60).map(x => String(x).slice(0,200)).join(" · ") : String(val).slice(0,2000))); e.appendChild(row); };
+    order.forEach(o => {
+      if(!o) return;
+      if(o==="text"){ if(typeof r.text==="string" && r.text) e.appendChild(el("div","text",r.text)); return; }
+      if(o==="words"){ const ws = normalizeWords(r.words);
+        if(ws.length){ const w = el("div","words"); ws.slice(0,60).forEach(x => { if(!x||typeof x!=="object") return; const s=el("span","word"); s.appendChild(el("b",null,String(x.en||""))); if(x.ru) s.appendChild(document.createTextNode(" — "+String(x.ru))); w.appendChild(s); }); e.appendChild(w); } return; }
+      putFx(o);
+    });
     if(cl) e.appendChild(cl);
+    { const rb = reactBar(cid, uid, k); if(rb) e.appendChild(rb); }
     return e;
   }
 
@@ -1243,7 +1298,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     progSubs[cid+"|"+state.me] = fs.doc("users/"+state.me+"/progress/"+cid).onSnapshot(d => { progress[cid] = (d.exists && d.data()) || {}; scheduleRender(); }, () => {});
   }
   const progOf = (cid, wk) => ((progress[cid]||{}).words||{})[wk] || {};
-  const LEARN_AT = 3, CLEAR_AT = 2;
+  const LEARN_AT = 1, CLEAR_AT = 1;   // одного верного ответа без подсказки хватает, чтобы карточка ушла в «запомнил»
   const isLearned = (p) => (p.s||0) >= LEARN_AT && !p.wrong;
   const normEn = (x) => String(x||"").toLowerCase().replace(/[’`]/g,"'").replace(/[.!?"«»()]/g,"").replace(/^(to|a|an|the)\s+/,"").replace(/\s+/g," ").trim();
   const normRu = (x) => String(x||"").toLowerCase().replace(/ё/g,"е").replace(/[.!?"«»()]/g,"").replace(/\s+/g," ").trim();
