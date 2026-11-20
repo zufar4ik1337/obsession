@@ -736,7 +736,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
   }
   const FIELD_MAX = 20000;   // поля отчёта: практически без ограничения (лимит документа в базе ~1 МБ)
-  const FEED_STEP = 10, feedShown = {}, DICT_STEP = 30, dictShown = {};
+  const FEED_FIRST = 3, FEED_STEP = 10, feedShown = {}, DICT_STEP = 30, dictShown = {};
   function collapseFeeds(){
     window.scrollTo(0, 0); showAllFeed.clear(); Object.keys(feedShown).forEach(k => delete feedShown[k]); render(); window.scrollTo(0, 0);
     const app = $("app"); app.classList.remove("fadein"); void app.offsetWidth; app.classList.add("fadein");
@@ -990,10 +990,10 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     else {
       const f = el("div","feed"); const key2 = cid+"/"+uid; const all = showAllFeed.has(key2);
       // отчёты показываем порциями: последний + по FEED_STEP за нажатие
-      const shown = all ? Math.min(keys.length, feedShown[key2] || 1+FEED_STEP) : 1;
+      const shown = all ? Math.min(keys.length, feedShown[key2] || 1+FEED_FIRST) : 1;
       keys.slice(0, shown).forEach(k => f.appendChild(entryNode(cid, uid, k, days[k]))); col.appendChild(f);
       if(keys.length>1){
-        if(!all){ const b = el("button","btn more","Показать предыдущие отчёты ("+(keys.length-1)+")"); b.type="button"; b.addEventListener("click", () => { showAllFeed.add(key2); feedShown[key2] = 1+FEED_STEP; render(); }); col.appendChild(b); }
+        if(!all){ const b = el("button","btn more","Показать предыдущие отчёты ("+(keys.length-1)+")"); b.type="button"; b.addEventListener("click", () => { showAllFeed.add(key2); feedShown[key2] = 1+FEED_FIRST; render(); }); col.appendChild(b); }
         else {
           const row = el("div","btns left");
           if(shown < keys.length){ const left = keys.length-shown, more = el("button","btn more","Загрузить ещё "+Math.min(FEED_STEP,left)+" (осталось "+left+")"); more.type="button"; more.addEventListener("click", () => { feedShown[key2] = shown+FEED_STEP; render(); }); row.appendChild(more); }
