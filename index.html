@@ -1672,7 +1672,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(has(t)) chip("Сегодня · "+dayCount[t], only([t]), () => { tr.days = new Set([t]); });
     if(has(y)) chip("Вчера · "+dayCount[y], only([y]), () => { tr.days = new Set([y]); });
     [[3,"3 дня"],[7,"Неделя"],[30,"Месяц"]].forEach(([n,l]) => { const ks = lastN(n).filter(has); if(ks.length > 1) chip(l, only(lastN(n)), () => { tr.days = new Set(ks); }); });
-    const cb = el("button","dchip cal"+(tr.calOpen?" on":""), "📅 Календарь"); cb.type="button"; cb.setAttribute("aria-expanded", String(!!tr.calOpen));
+    const cb = el("button","dchip dcalbtn"+(tr.calOpen?" on":""), "📅 Календарь"); cb.type="button"; cb.setAttribute("aria-expanded", String(!!tr.calOpen));
     cb.addEventListener("click", () => { tr.calOpen = !tr.calOpen; tr.rangeStart = null; render(); }); row.appendChild(cb);
     box.appendChild(row);
     if(tr.days.size) box.appendChild(el("div","muted dsum","Выбрано: "+daysSummary(tr.days)+" · "+shownN+" "+plural(shownN,"слово","слова","слов")));
