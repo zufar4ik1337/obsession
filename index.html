@@ -1690,7 +1690,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const modes = el("div","seg dcal-mode");
       [["range","Диапазон"],["pick","Отдельные дни"]].forEach(([m,l]) => { const b = el("button",null,l); b.type="button"; b.setAttribute("aria-selected", String((tr.calMode||"range")===m)); b.addEventListener("click", () => { tr.calMode = m; tr.rangeStart = null; render(); }); modes.appendChild(b); });
       cal.appendChild(modes);
-      cal.appendChild(el("div","muted dcal-tip", (tr.calMode||"range")==="range" ? (tr.rangeStart ? "Теперь нажми последний день — начало: "+fmtDayShort(tr.rangeStart) : "Нажми первый день, потом последний — выберутся все дни между ними") : "Нажимай дни, чтобы добавить или убрать"));
+      cal.appendChild(el("div","muted dcal-tip", (tr.calMode||"range")==="range" ? (tr.rangeStart ? "Теперь нажми последний день — начало: "+fmtDayShort(tr.rangeStart) : "Нажми первый день, потом последний — выберутся все дни между ними. Новый диапазон заменяет старый") : "Нажимай дни, чтобы добавить их к выбору или убрать"));
       const grid = el("div","dcal-grid");
       ["пн","вт","ср","чт","пт","сб","вс"].forEach(w => grid.appendChild(el("span","dcal-wd",w)));
       const first = new Date(Y, M-1, 1); const lead = (first.getDay()+6)%7; for(let i=0;i<lead;i++) grid.appendChild(el("span"));
@@ -1703,8 +1703,9 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
         if(!cnt) b.disabled = true;
         else b.addEventListener("click", () => {
           if((tr.calMode||"range")==="pick"){ on ? tr.days.delete(k) : tr.days.add(k); go(); return; }
-          if(!tr.rangeStart){ tr.rangeStart = k; tr.days.add(k); go(); }
-          else { setRange(tr.rangeStart, k); tr.rangeStart = null; go(); }
+          // новый диапазон заменяет прошлый выбор (без кнопки «Сбросить»)
+          if(!tr.rangeStart){ tr.rangeStart = k; tr.days = new Set([k]); go(); }
+          else { tr.days = new Set(); setRange(tr.rangeStart, k); tr.rangeStart = null; go(); }
         });
         grid.appendChild(b);
       }
