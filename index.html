@@ -329,6 +329,18 @@ textarea{resize:vertical;min-height:84px}
 .dchip{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
 .dchip.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:600}
 .dchip.ghost{border-style:dashed;opacity:.85}
+.daypick-box{display:grid;gap:6px;margin:2px 0 8px}
+.dsum{font-size:12px}
+.dcal{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:8px;max-width:340px;background:rgba(255,255,255,.02)}
+.dcal-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dcal-tip{font-size:12px}
+.dcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dcal-wd{font-size:11px;opacity:.55;text-align:center}
+.dcal-d{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:8px;padding:3px 0;font:inherit;font-size:13px;cursor:pointer;display:grid;justify-items:center;line-height:1.1;min-height:36px}
+.dcal-d small{font-size:9px;opacity:.7}
+.dcal-d.empty{opacity:.3;cursor:default;border-color:transparent;background:transparent}
+.dcal-d.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:700}
+.dcal-d.start{outline:2px dashed #f2f2f2;outline-offset:1px}
 textarea.grow{resize:vertical;min-height:0;overflow:hidden}
 .reacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .react{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:3px 10px;font:inherit;font-size:14px;line-height:1.4;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
@@ -1634,6 +1646,74 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(me) box.appendChild(myProgressNode(kind, G.items.map(x => ({ en:plainEn(x.en), ru:x.ru, key:x.key }))));
     return box;
   }
+  // ---------- выбор дней для карточек слов: быстрые кнопки + календарь (диапазон или отдельные дни) ----------
+  const fmtDayShort = (k) => { const d = parseKey(k); return d.getDate()+" "+MONTHS[d.getMonth()]; };
+  function daysSummary(set){
+    const ks = [...set].sort(); if(!ks.length) return "";
+    const parts = []; let a = ks[0], b = ks[0];
+    const flush = () => { parts.push(a===b ? fmtDayShort(a) : fmtDayShort(a)+" – "+fmtDayShort(b)); };
+    for(let i=1;i<ks.length;i++){ if(ks[i]===addDays(b,1)) b = ks[i]; else { flush(); a = b = ks[i]; } }
+    flush(); return parts.length > 4 ? parts.slice(0,4).join(", ")+" и ещё "+(parts.length-4) : parts.join(", ");
+  }
+  function dayPicker(dayCount, total, shownN){
+    const box = el("div","daypick-box");
+    const go = () => { tr.cur=null; tr.phase="ask"; render(); };
+    const has = (k) => !!dayCount[k];
+    const setRange = (a, b) => { if(a > b) [a, b] = [b, a]; for(let k=a; k<=b; k=addDays(k,1)) if(has(k)) tr.days.add(k); };
+    const row = el("div","daypick");
+    const chip = (label, on, fn) => { const b = el("button","dchip"+(on?" on":""), label); b.type="button"; b.setAttribute("aria-pressed", String(on)); b.addEventListener("click", () => { fn(); go(); }); row.appendChild(b); };
+    const t = today(), y = addDays(t,-1);
+    const only = (ks) => tr.days.size===ks.filter(has).length && ks.filter(has).every(k => tr.days.has(k)) && ks.some(has);
+    const lastN = (n) => { const out=[]; for(let i=0;i<n;i++) out.push(addDays(t,-i)); return out; };
+    chip("Все · "+total, !tr.days.size, () => tr.days.clear());
+    if(has(t)) chip("Сегодня · "+dayCount[t], only([t]), () => { tr.days = new Set([t]); });
+    if(has(y)) chip("Вчера · "+dayCount[y], only([y]), () => { tr.days = new Set([y]); });
+    [[3,"3 дня"],[7,"Неделя"],[30,"Месяц"]].forEach(([n,l]) => { const ks = lastN(n).filter(has); if(ks.length > 1) chip(l, only(lastN(n)), () => { tr.days = new Set(ks); }); });
+    const cb = el("button","dchip cal"+(tr.calOpen?" on":""), "📅 Календарь"); cb.type="button"; cb.setAttribute("aria-expanded", String(!!tr.calOpen));
+    cb.addEventListener("click", () => { tr.calOpen = !tr.calOpen; tr.rangeStart = null; render(); }); row.appendChild(cb);
+    box.appendChild(row);
+    if(tr.days.size) box.appendChild(el("div","muted dsum","Выбрано: "+daysSummary(tr.days)+" · "+shownN+" "+plural(shownN,"слово","слова","слов")));
+    if(tr.calOpen){
+      const keys = Object.keys(dayCount).sort();
+      if(!tr.calMonth) tr.calMonth = (keys[keys.length-1]||t).slice(0,7);
+      const [Y, M] = tr.calMonth.split("-").map(Number);
+      const cal = el("div","dcal");
+      const head = el("div","dcal-head");
+      const nav = (d) => { const dt = new Date(Y, M-1+d, 1); tr.calMonth = dt.getFullYear()+"-"+pad(dt.getMonth()+1); render(); };
+      const prev = el("button","btn ghost mini","‹"); prev.type="button"; prev.setAttribute("aria-label","Предыдущий месяц"); prev.addEventListener("click", () => nav(-1));
+      const next = el("button","btn ghost mini","›"); next.type="button"; next.setAttribute("aria-label","Следующий месяц"); next.addEventListener("click", () => nav(1));
+      prev.disabled = !keys.length || tr.calMonth <= keys[0].slice(0,7); next.disabled = !keys.length || tr.calMonth >= keys[keys.length-1].slice(0,7);
+      head.append(prev, el("b",null, MONTH_ACC[M-1][0].toUpperCase()+MONTH_ACC[M-1].slice(1)+" "+Y), next); cal.appendChild(head);
+      const modes = el("div","seg dcal-mode");
+      [["range","Диапазон"],["pick","Отдельные дни"]].forEach(([m,l]) => { const b = el("button",null,l); b.type="button"; b.setAttribute("aria-selected", String((tr.calMode||"range")===m)); b.addEventListener("click", () => { tr.calMode = m; tr.rangeStart = null; render(); }); modes.appendChild(b); });
+      cal.appendChild(modes);
+      cal.appendChild(el("div","muted dcal-tip", (tr.calMode||"range")==="range" ? (tr.rangeStart ? "Теперь нажми последний день — начало: "+fmtDayShort(tr.rangeStart) : "Нажми первый день, потом последний — выберутся все дни между ними") : "Нажимай дни, чтобы добавить или убрать"));
+      const grid = el("div","dcal-grid");
+      ["пн","вт","ср","чт","пт","сб","вс"].forEach(w => grid.appendChild(el("span","dcal-wd",w)));
+      const first = new Date(Y, M-1, 1); const lead = (first.getDay()+6)%7; for(let i=0;i<lead;i++) grid.appendChild(el("span"));
+      const nDays = new Date(Y, M, 0).getDate();
+      for(let d=1; d<=nDays; d++){
+        const k = Y+"-"+pad(M)+"-"+pad(d), on = tr.days.has(k), cnt = dayCount[k]||0;
+        const b = el("button","dcal-d"+(on?" on":"")+(cnt?"":" empty")+(k===tr.rangeStart?" start":"")); b.type="button";
+        b.append(el("span",null,String(d)), cnt ? el("small",null,String(cnt)) : document.createTextNode(""));
+        b.title = cnt ? cnt+" "+plural(cnt,"слово","слова","слов") : "в этот день слов не вносили";
+        if(!cnt) b.disabled = true;
+        else b.addEventListener("click", () => {
+          if((tr.calMode||"range")==="pick"){ on ? tr.days.delete(k) : tr.days.add(k); go(); return; }
+          if(!tr.rangeStart){ tr.rangeStart = k; tr.days.add(k); go(); }
+          else { setRange(tr.rangeStart, k); tr.rangeStart = null; go(); }
+        });
+        grid.appendChild(b);
+      }
+      cal.appendChild(grid);
+      const act = el("div","btns left");
+      const clr = el("button","btn ghost mini","Сбросить"); clr.type="button"; clr.addEventListener("click", () => { tr.days.clear(); tr.rangeStart = null; go(); });
+      const done = el("button","btn mini","Готово"); done.type="button"; done.addEventListener("click", () => { tr.calOpen = false; tr.rangeStart = null; render(); });
+      act.append(done, clr); cal.appendChild(act);
+      box.appendChild(cal);
+    }
+    return box;
+  }
   function trainerNode(cid, words){
     if(tr.forCid!==cid){ Object.assign(tr, { forCid:cid, cur:null, phase:"ask", answer:"", ok:null }); }
     const me = isMember(cid); if(me) watchProgress(cid);
@@ -1667,17 +1747,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       b.addEventListener("click", () => { if(tr.dir!==d){ tr.dir=d; tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false; render(); } }); seg2.appendChild(b); });
     segs.append(seg, seg2); card.appendChild(segs);
     const dayKeys = Object.keys(dayCount).sort().reverse();
-    if(dayKeys.length > 1){
-      const dw = el("div","daypick"); dw.appendChild(el("span","muted","Дни:"));
-      const mk = (label, on, fn, title) => { const b = el("button","dchip"+(on?" on":""), label); b.type="button"; b.setAttribute("aria-pressed", String(on)); if(title) b.title = title; b.addEventListener("click", () => { fn(); tr.cur=null; tr.phase="ask"; render(); }); dw.appendChild(b); };
-      mk("Все · "+deck0.length, !tr.days.size, () => tr.days.clear());
-      const y = addDays(today(), -1);
-      const limit = tr.allDays ? dayKeys.length : 10;
-      dayKeys.slice(0, limit).forEach(k => { const lbl = (k===today() ? "Сегодня" : k===y ? "Вчера" : human(k).replace(/,.*$/,""))+" · "+dayCount[k];
-        mk(lbl, tr.days.has(k), () => { tr.days.has(k) ? tr.days.delete(k) : tr.days.add(k); }, "Можно выбрать несколько дней"); });
-      if(dayKeys.length > 10){ const more = el("button","dchip ghost", tr.allDays ? "Меньше" : "Ещё дни ("+(dayKeys.length-10)+")"); more.type="button"; more.addEventListener("click", () => { tr.allDays = !tr.allDays; render(); }); dw.appendChild(more); }
-      card.appendChild(dw);
-    }
+    if(dayKeys.length > 1) card.appendChild(dayPicker(dayCount, deck0.length, deck.length));
     if(!deck.length){
       card.appendChild(el("div","muted", tr.mode==="mine" ? "Твоих слов с переводом пока нет. Добавляй их в отчётах в поле «Новые слова»." : tr.mode==="errors" ? "Ошибок нет — всё разобрано." : "Слов с переводом пока нет."));
       box.appendChild(card); if(me) box.appendChild(myProgressNode(cid, usable)); return box;
