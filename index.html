@@ -322,6 +322,8 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
+.bmin input{max-width:120px}
+.rbtitle .muted{font-weight:500}
 .daypick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 6px}
 .dchip{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
 .dchip.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:600}
@@ -1205,18 +1207,21 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     let st = blockState[cid];
     if(!st || st.date!==date.value){
       let blocks;
-      if(existing && Array.isArray(existing.b) && existing.b.length) blocks = existing.b.slice(0,BLOCK_MAX).map(b => { const vals = {}; bf.forEach(fd => { vals[fd.id] = valOf(b, fd); }); vals[tf ? tf.id : "_t"] = str(b.t,200); return { vals }; });
+      if(existing && Array.isArray(existing.b) && existing.b.length) blocks = existing.b.slice(0,BLOCK_MAX).map(b => { const vals = {}; bf.forEach(fd => { vals[fd.id] = valOf(b, fd); }); vals[tf ? tf.id : "_t"] = str(b.t,200); if(Number(b.m) > 0) vals._m = String(b.m); return { vals }; });
       else if(existing){ const vals = {}; bf.forEach(fd => { vals[fd.id] = fieldValueText(existing, fd); }); blocks = [{ vals }]; }
       else blocks = [{ vals:{} }];
       st = blockState[cid] = { date: date.value, blocks, act: 0 };
     }
     if(st.act >= st.blocks.length) st.act = st.blocks.length-1;
     const titleOf = (b, i) => ((tf ? b.vals[tf.id] : b.vals._t) || "").trim() || (noun+" "+(i+1));
+    // минуты по каждой книге складываются в «Минут всего»
+    const sumMin = () => st.blocks.reduce((a, b) => a + (Math.max(0, Math.round(Number(String(b.vals._m||"").replace(",","."))) || 0)), 0);
+    if(sumMin() > 0){ mn.value = String(sumMin()); mn.readOnly = true; mn.title = "Сумма минут по всем блокам"; }
     const title = existing ? "Правка отчёта за "+(date.value===today()?"сегодня":human(date.value)) : (date.value===today() ? "Отчёт за сегодня" : "Отчёт за "+human(date.value));
     f.appendChild(el("h3",null,title));
     if(existing && (typedDraft() || blocksTyped(blockState[cid]))) f.appendChild(el("div","msg err","За "+(date.value===today()?"сегодня":human(date.value))+" уже есть отчёт. Если сохранить, он заменится тем, что сейчас в форме."));
     else if(!existing && !drafts[dId] && date.value!==today()) f.appendChild(el("div","hint","Сейчас ночь, поэтому отчёт по умолчанию за вчера. Если он за сегодня — поменяй дату, текст не пропадёт."));
-    const r = el("div","row2"); const l1 = el("label",null,"Дата"); l1.htmlFor=dId; l1.appendChild(date); const l2 = el("label",null,"Минут всего (нужно "+g+")"); l2.htmlFor=mId; l2.appendChild(mn); r.append(l1,l2); f.appendChild(r);
+    const r = el("div","row2"); const l1 = el("label",null,"Дата"); l1.htmlFor=dId; l1.appendChild(date); const l2 = el("label",null,"Минут всего"+(sumMin() > 0 ? " — сумма" : "")+" (нужно "+g+")"); l2.htmlFor=mId; l2.appendChild(mn); r.append(l1,l2); f.appendChild(r);
     [date,mn].forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; backupDraft(cid); }));
     date.addEventListener("change", () => { if(!isKey(date.value)) return; drafts[dId]=date.value; const st0 = blockState[cid];
       if(blocksTyped(st0) || typedDraft()){ if(st0) st0.date = date.value; } else clearRepDrafts(); backupDraft(cid); render(); });
@@ -1240,8 +1245,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       n.value = cur.vals[key] || ""; n.addEventListener("input", () => { cur.vals[key] = n.value; backupDraft(cid); if(key===(tf?tf.id:"_t")){ const tb = $("btab-"+st.act); if(tb) tb.textContent = titleOf(cur, st.act); } });
       const l = el("label",null,label); l.htmlFor = n.id; if(type==="list") l.appendChild(el("span","hint","по одному на строку")); l.appendChild(n); return [l, n];
     };
-    if(!tf){ const [l, n] = mkInput(null, "_t", "Название "+noun.toLowerCase().replace(/а$/,"и").replace(/я$/,"и"), "short"); n.placeholder = "например, «Царь-рыба»"; if(planTitles.length){ n.setAttribute("list","bPlanList"); } pane.appendChild(l); }
-    (tf ? [tf].concat(bf.filter(x => x!==tf)) : bf).forEach(fd => { const [l, n] = mkInput(fd, fd.id, fd.label, fd.type); if(fd===tf && planTitles.length) n.setAttribute("list","bPlanList"); if(fd.id==="text" && !fd.label) n.placeholder="Что прочитал"; pane.appendChild(l); });
+    const addMin = () => {
+      const n = el("input"); n.type="number"; n.min=0; n.max=600; n.inputMode="numeric"; n.id="bf-"+st.act+"-_m"; n.placeholder="0"; n.value = cur.vals._m || "";
+      n.addEventListener("input", () => { cur.vals._m = n.value; const t = sumMin(); if(t > 0){ mn.value = String(t); mn.readOnly = true; } else { mn.readOnly = false; } drafts[mId] = mn.value; backupDraft(cid); });
+      const l = el("label","bmin","Минут на эту "+noun.toLowerCase().replace(/а$/,"у").replace(/я$/,"ю")); l.htmlFor = n.id; l.appendChild(n); pane.appendChild(l);
+    };
+    if(!tf){ const [l, n] = mkInput(null, "_t", "Название "+noun.toLowerCase().replace(/а$/,"и").replace(/я$/,"и"), "short"); n.placeholder = "например, «Царь-рыба»"; if(planTitles.length){ n.setAttribute("list","bPlanList"); } pane.appendChild(l); addMin(); }
+    (tf ? [tf].concat(bf.filter(x => x!==tf)) : bf).forEach(fd => { const [l, n] = mkInput(fd, fd.id, fd.label, fd.type); if(fd===tf && planTitles.length) n.setAttribute("list","bPlanList"); if(fd.id==="text" && !fd.label) n.placeholder="Что прочитал"; pane.appendChild(l); if(fd===tf) addMin(); });
     if(planTitles.length){ const dl = el("datalist"); dl.id="bPlanList"; planTitles.forEach(t => { const o = el("option"); o.value = t; dl.appendChild(o); }); pane.appendChild(dl); }
     if(st.blocks.length > 1){ const rm = el("button","btn ghost mini","Убрать «"+titleOf(cur, st.act)+"» из отчёта"); rm.type="button"; let armedB=false;
       rm.addEventListener("click", () => { if(!armedB){ armedB=true; rm.textContent="Точно убрать? Нажми ещё раз"; setTimeout(() => { armedB=false; rm.textContent="Убрать «"+titleOf(cur, st.act)+"» из отчёта"; }, 3000); return; }
@@ -1269,8 +1279,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       for(let i=0;i<st.blocks.length;i++){ const b = st.blocks[i]; if(!filled.includes(b)) continue;
         for(const fd of bf){ if(fd.req && !String(b.vals[fd.id]||"").trim()){ st.act = i; render(); setTimeout(() => { const m2 = document.querySelector(".report .msg"); if(m2){ m2.textContent = "«"+titleOf(b,i)+"»: заполни поле «"+fd.label+"»."; m2.classList.remove("hidden"); m2.classList.add("err"); } }, 0); return; } } }
       const now = new Date().toISOString(); const prev = daysOf(cid, state.me)[k];
-      const rec = { minutes: clampNum(mn.value,1,600,g), createdAt:(prev&&prev.createdAt)||now, updatedAt:now };
-      rec.b = filled.map((b, i) => { const o = { t: titleOf(b, i).slice(0,200), v:{} }; if(tf) o.tf = tf.id;
+      const tot = sumMin(); const rec = { minutes: clampNum(tot > 0 ? tot : mn.value,1,600,g), createdAt:(prev&&prev.createdAt)||now, updatedAt:now };
+      rec.b = filled.map((b, i) => { const o = { t: titleOf(b, i).slice(0,200), v:{} }; if(tf) o.tf = tf.id; const bm = Math.round(Number(String(b.vals._m||"").replace(",","."))); if(bm > 0) o.m = Math.min(bm, 600);
         bf.forEach(fd => { const raw = String(b.vals[fd.id]||"").trim(); if(!raw) return;
           if(fd===tf) return;
           if(fd.id==="text"){ o.text = raw.slice(0,FIELD_MAX); return; }
@@ -1298,7 +1308,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const fxs0 = Array.isArray(r.f) ? r.f : [];
     if(Array.isArray(r.b) && r.b.length){
       r.b.slice(0,BLOCK_MAX).forEach((b, i) => { if(!b || typeof b!=="object") return;
-        const bx = el("div","rblock"); bx.appendChild(el("div","rbtitle", str(b.t,200) || ("Блок "+(i+1))));
+        const bx = el("div","rblock"); const bt = el("div","rbtitle", str(b.t,200) || ("Блок "+(i+1))); if(Number(b.m) > 0) bt.appendChild(el("span","muted num"," · "+Math.round(b.m)+" мин")); bx.appendChild(bt);
         if(typeof b.text==="string" && b.text) bx.appendChild(el("div","text",b.text.slice(0,FIELD_MAX)));
         const bv = b.v && typeof b.v==="object" ? b.v : {};
         fxs0.forEach(fd => { if(!fd || typeof fd!=="object" || fd.id===b.tf) return; const val = bv[fd.id]; if(val==null || val==="" || (Array.isArray(val) && !val.length)) return;
