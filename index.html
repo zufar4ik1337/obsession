@@ -329,7 +329,10 @@ textarea{resize:vertical;min-height:84px}
 .dchip{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
 .dchip.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:600}
 .dchip.ghost{border-style:dashed;opacity:.85}
-.daypick-box{display:grid;gap:6px;margin:2px 0 8px}
+.daypick-box{display:grid;gap:6px;margin:2px 0 8px;justify-items:start}
+.daypick .dchip,.dcal-head .btn,.dcal .btns .btn{width:auto;flex:0 0 auto}
+.dcal{width:100%;box-sizing:border-box}
+.dcal-grid .dcal-d{width:100%}
 .dsum{font-size:12px}
 .dcal{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:8px;max-width:340px;background:rgba(255,255,255,.02)}
 .dcal-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
