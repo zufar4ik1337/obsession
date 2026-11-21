@@ -322,6 +322,7 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
+.cardpos{font-size:12px;opacity:.6;margin-top:6px;text-align:center;font-variant-numeric:tabular-nums}
 .bmin input{max-width:120px}
 .rbtitle .muted{font-weight:500}
 .daypick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 6px}
@@ -1449,6 +1450,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   const cycleMem = {};
   function cycleOf(name){ if(!cycleMem[name]){ let a=[]; try{ a = JSON.parse(localStorage.getItem("cycle:"+name)||"[]"); }catch(e){} cycleMem[name] = new Set(Array.isArray(a) ? a : []); } return cycleMem[name]; }
   function saveCycle(name){ try{ localStorage.setItem("cycle:"+name, JSON.stringify([...cycleMem[name]])); }catch(e){} }
+  // «12 из 55» — сколько карточек текущего круга уже показано
+  function cyclePos(name, deck, keyOf){ const seen = cycleOf(name); const n = deck.reduce((a, x) => a + (seen.has(keyOf(x)) ? 1 : 0), 0); return el("div","cardpos", Math.max(1, n)+" из "+deck.length); }
   function pickCycle(name, deck, keyOf, recentName){
     const seen = cycleOf(name); let rest = deck.filter(x => !seen.has(keyOf(x)));
     if(!rest.length){ seen.clear(); const last = recentOf(recentName).slice(-1)[0]; rest = deck.length > 1 ? deck.filter(x => keyOf(x)!==last) : deck; }
@@ -1463,6 +1466,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const errors = me ? VERBS.filter(v => progOf("verbs", v.key).wrong) : [];
     if(vt.mode==="errors" && !errors.length && vt.phase==="ask") vt.mode = "all";
     const deck = vt.mode==="errors" ? errors : VERBS;
+    const cycV = "verbs/"+vt.mode;
     const box = el("div","trainer");
     if(me && errors.length && vt.mode!=="errors"){
       const bn = el("button","review-banner"); bn.type="button";
@@ -1483,7 +1487,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!deck.length){ card.appendChild(el("div","muted","Ошибок нет — всё разобрано.")); box.appendChild(card); if(me) box.appendChild(myProgressNode("verbs", VERBS.map(v => ({ en:v.b+" — "+v.p+" — "+v.pp, ru:v.ru, key:v.key })))); return box; }
     let v = deck.find(x => x.key===vt.cur);
     if(!v){
-      v = pickCycle("verbs/"+vt.mode, deck, x => x.key, "verbs"); vt.cur = v.key; vt.phase = "ask";
+      v = pickCycle(cycV, deck, x => x.key, "verbs"); vt.cur = v.key; vt.phase = "ask";
     }
     const p = progOf("verbs", v.key);
     card.appendChild(el("div","hint", vt.dir==="ru" ? "Как это по-английски? Назови все 3 формы" : "Назови 2-ю и 3-ю формы"));
@@ -1511,6 +1515,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
     if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "ещё учу: верно "+(p.k||0)+" из "+RELEARN_AT : "новый глагол"; card.appendChild(el("div","hint", st)); }
+    card.appendChild(cyclePos(cycV, deck, x => x.key));
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode("verbs", VERBS.map(x => ({ en:x.b+" — "+x.p+" — "+x.pp, ru:x.ru, key:x.key }))));
     return box;
@@ -1572,6 +1577,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const errors = me ? G.items.filter(x => progOf(kind, x.key).wrong) : [];
     if(S.mode==="errors" && !errors.length && S.phase==="ask") S.mode = "all";
     const deck = S.mode==="errors" ? errors : pool;
+    const cycG = kind+"/"+S.mode+"/"+(S.topic||"all");
     const box = el("div","trainer");
     if(me && errors.length && S.mode!=="errors"){
       const bn = el("button","review-banner"); bn.type="button";
@@ -1596,7 +1602,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     if(!deck.length){ card.appendChild(el("div","muted","Ошибок нет — всё разобрано.")); box.appendChild(card); if(me) box.appendChild(myProgressNode(kind, G.items.map(x => ({ en:plainEn(x.en), ru:x.ru, key:x.key })))); return box; }
     let it = deck.find(x => x.key===S.cur);
     if(!it){
-      it = pickCycle(kind+"/"+S.mode+"/"+(S.topic||"all"), deck, x => x.key, kind); S.cur = it.key; S.phase = "ask";
+      it = pickCycle(cycG, deck, x => x.key, kind); S.cur = it.key; S.phase = "ask";
     }
     const p = progOf(kind, it.key);
     const isArt = kind==="art";
@@ -1623,6 +1629,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
     if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "ещё учу: верно "+(p.k||0)+" из "+RELEARN_AT : "новая карточка"; card.appendChild(el("div","hint", G.topics[it.t]+" · "+st)); }
+    card.appendChild(cyclePos(cycG, deck, x => x.key));
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode(kind, G.items.map(x => ({ en:plainEn(x.en), ru:x.ru, key:x.key }))));
     return box;
@@ -1641,6 +1648,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const dayCount = {}; deck0.forEach(w => { if(w.k) dayCount[w.k] = (dayCount[w.k]||0)+1; });
     [...tr.days].forEach(d => { if(!dayCount[d]) tr.days.delete(d); });
     const deck = tr.days.size ? deck0.filter(w => tr.days.has(w.k)) : deck0;
+    const cycW = cid+"/"+tr.mode+(tr.days.size ? "/"+[...tr.days].sort().join(",") : "");
     const box = el("div","trainer");
     if(me && errors.length && tr.mode!=="errors"){
       const bn = el("button","review-banner"); bn.type="button";
@@ -1677,7 +1685,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     let w = deck.find(x => wordKey(x.en)===tr.cur);
     if(!w){
       // слово не повторяется, пока не пройдёт вся колода; потом новый круг в случайном порядке
-      w = pickCycle(cid+"/"+tr.mode+(tr.days.size ? "/"+[...tr.days].sort().join(",") : ""), deck, x => wordKey(x.en), cid); tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
+      w = pickCycle(cycW, deck, x => wordKey(x.en), cid); tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
     }
     const wk = wordKey(w.en);
     const question = tr.dir==="ru2en" ? w.ru : w.en, target = tr.dir==="ru2en" ? w.en : w.ru;
@@ -1706,6 +1714,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
     if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "ещё учу: верно "+(p.k||0)+" из "+RELEARN_AT : "новое слово"; card.appendChild(el("div","hint", st)); }
+    card.appendChild(cyclePos(cycW, deck, x => wordKey(x.en)));
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode(cid, usable));
     return box;
