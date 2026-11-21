@@ -1677,11 +1677,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   }
   function dayPicker(dayCount, total, shownN){
     const box = el("div","daypick-box");
-    const go = () => { tr.cur=null; tr.phase="ask"; render(); };
+    // текущая карточка остаётся, если она есть в новом списке; иначе берётся новая
+    const go = () => render();
     const has = (k) => !!dayCount[k];
     const setRange = (a, b) => { if(a > b) [a, b] = [b, a]; for(let k=a; k<=b; k=addDays(k,1)) if(has(k)) tr.days.add(k); };
     const row = el("div","daypick");
-    const chip = (label, on, fn) => { const b = el("button","dchip"+(on?" on":""), label); b.type="button"; b.setAttribute("aria-pressed", String(on)); b.addEventListener("click", () => { fn(); go(); }); row.appendChild(b); };
+    const chip = (label, on, fn) => { const b = el("button","dchip"+(on?" on":""), label); b.type="button"; b.setAttribute("aria-pressed", String(on)); b.addEventListener("click", () => { if(on) return; fn(); go(); }); row.appendChild(b); };   // повторное нажатие на выбранное — ничего не меняет
     const t = today(), y = addDays(t,-1);
     const only = (ks) => tr.days.size===ks.filter(has).length && ks.filter(has).every(k => tr.days.has(k)) && ks.some(has);
     const lastN = (n) => { const out=[]; for(let i=0;i<n;i++) out.push(addDays(t,-i)); return out; };
@@ -1774,6 +1775,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       box.appendChild(card); if(me) box.appendChild(myProgressNode(cid, usable)); return box;
     }
     let w = deck.find(x => wordKey(x.en)===tr.cur);
+    if(w && pendingSeen[cid] && pendingSeen[cid].key===tr.cur) pendingSeen[cid].name = cycW;   // карточка перешла в другой список — засчитается в нём
     if(!w){
       // слово не повторяется, пока не пройдёт вся колода; потом новый круг в случайном порядке
       w = pickCycle(cycW, deck, x => wordKey(x.en), cid); tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
