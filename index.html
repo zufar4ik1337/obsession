@@ -322,6 +322,10 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
+.daypick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 6px}
+.dchip{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.dchip.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:600}
+.dchip.ghost{border-style:dashed;opacity:.85}
 textarea.grow{resize:vertical;min-height:0;overflow:hidden}
 .reacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .react{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:3px 10px;font:inherit;font-size:14px;line-height:1.4;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
@@ -1621,7 +1625,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const errors = me ? usable.filter(w => progOf(cid, wordKey(w.en)).wrong) : [];
     if(!me && tr.mode!=="all") tr.mode = "all";
     if(tr.mode==="errors" && !errors.length && tr.phase==="ask") tr.mode = "all";
-    const deck = tr.mode==="mine" ? mine : tr.mode==="errors" ? errors : usable;
+    const deck0 = tr.mode==="mine" ? mine : tr.mode==="errors" ? errors : usable;
+    // фильтр по дням, когда слова внесли в отчёт: можно выбрать один или несколько дней
+    if(!(tr.days instanceof Set)) tr.days = new Set();
+    const dayCount = {}; deck0.forEach(w => { if(w.k) dayCount[w.k] = (dayCount[w.k]||0)+1; });
+    [...tr.days].forEach(d => { if(!dayCount[d]) tr.days.delete(d); });
+    const deck = tr.days.size ? deck0.filter(w => tr.days.has(w.k)) : deck0;
     const box = el("div","trainer");
     if(me && errors.length && tr.mode!=="errors"){
       const bn = el("button","review-banner"); bn.type="button";
@@ -1639,6 +1648,18 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     [["ru2en","RU → EN"],["en2ru","EN → RU"]].forEach(([d,label]) => { const b = el("button",null,label); b.type="button"; b.setAttribute("aria-selected", String(tr.dir===d));
       b.addEventListener("click", () => { if(tr.dir!==d){ tr.dir=d; tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false; render(); } }); seg2.appendChild(b); });
     segs.append(seg, seg2); card.appendChild(segs);
+    const dayKeys = Object.keys(dayCount).sort().reverse();
+    if(dayKeys.length > 1){
+      const dw = el("div","daypick"); dw.appendChild(el("span","muted","Дни:"));
+      const mk = (label, on, fn, title) => { const b = el("button","dchip"+(on?" on":""), label); b.type="button"; b.setAttribute("aria-pressed", String(on)); if(title) b.title = title; b.addEventListener("click", () => { fn(); tr.cur=null; tr.phase="ask"; render(); }); dw.appendChild(b); };
+      mk("Все · "+deck0.length, !tr.days.size, () => tr.days.clear());
+      const y = addDays(today(), -1);
+      const limit = tr.allDays ? dayKeys.length : 10;
+      dayKeys.slice(0, limit).forEach(k => { const lbl = (k===today() ? "Сегодня" : k===y ? "Вчера" : human(k).replace(/,.*$/,""))+" · "+dayCount[k];
+        mk(lbl, tr.days.has(k), () => { tr.days.has(k) ? tr.days.delete(k) : tr.days.add(k); }, "Можно выбрать несколько дней"); });
+      if(dayKeys.length > 10){ const more = el("button","dchip ghost", tr.allDays ? "Меньше" : "Ещё дни ("+(dayKeys.length-10)+")"); more.type="button"; more.addEventListener("click", () => { tr.allDays = !tr.allDays; render(); }); dw.appendChild(more); }
+      card.appendChild(dw);
+    }
     if(!deck.length){
       card.appendChild(el("div","muted", tr.mode==="mine" ? "Твоих слов с переводом пока нет. Добавляй их в отчётах в поле «Новые слова»." : tr.mode==="errors" ? "Ошибок нет — всё разобрано." : "Слов с переводом пока нет."));
       box.appendChild(card); if(me) box.appendChild(myProgressNode(cid, usable)); return box;
@@ -1646,7 +1667,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     let w = deck.find(x => wordKey(x.en)===tr.cur);
     if(!w){
       // слово не повторяется, пока не пройдёт вся колода; потом новый круг в случайном порядке
-      w = pickCycle(cid+"/"+tr.mode, deck, x => wordKey(x.en), cid); tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
+      w = pickCycle(cid+"/"+tr.mode+(tr.days.size ? "/"+[...tr.days].sort().join(",") : ""), deck, x => wordKey(x.en), cid); tr.cur = wordKey(w.en); tr.phase="ask"; tr.answer=""; tr.hint=false; tr.opts=null; tr.hinted=false;
     }
     const wk = wordKey(w.en);
     const question = tr.dir==="ru2en" ? w.ru : w.en, target = tr.dir==="ru2en" ? w.en : w.ru;
