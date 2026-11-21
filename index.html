@@ -54,13 +54,11 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--g3);color:var(--ink);font:16px/1.5 var(--body);min-height:100vh;position:relative}
-/* фон — длинное полотно градиента, которое прокручивается вместе со страницей:
-   сверху светлое, уходит в тёмное, дальше мягкие волны светлее/темнее по всей длине */
+/* фон — один плавный градиент на всю длину страницы: сверху как было, внизу — самый тёмный */
 body::before{content:"";position:absolute;inset:0;min-height:100vh;z-index:-1;pointer-events:none;
   background:
     radial-gradient(120% 900px at 50% -120px, var(--g1) 0%, transparent 60%) no-repeat,
-    linear-gradient(180deg, var(--g1) 0, var(--g2) 900px, var(--g3) 1800px) 0 0 / 100% 1800px no-repeat,
-    repeating-linear-gradient(180deg, var(--g3) 0, #4a4a4a 1300px, #161616 2500px, #3a3a3a 3500px, var(--g3) 4400px) 0 1800px / 100% 100% no-repeat}
+    linear-gradient(180deg, var(--g1) 0%, var(--g2) 45%, var(--g3) 100%) 0 0 / 100% 100% no-repeat}
 .panel,.col{backdrop-filter:blur(18px) saturate(1.1);-webkit-backdrop-filter:blur(18px) saturate(1.1);box-shadow:var(--shadow)}
 .goals,.bstat,.free{background:color-mix(in srgb, var(--bg) 55%, transparent)}
 .wrap{max-width:1180px;margin:0 auto;padding:calc(24px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));display:grid;gap:22px}
