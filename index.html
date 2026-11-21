@@ -322,7 +322,10 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
-.cardpos{font-size:12px;opacity:.6;margin-top:6px;text-align:center;font-variant-numeric:tabular-nums}
+.cardpos{font-size:12px;margin-top:6px;display:flex;gap:10px;justify-content:center;align-items:center;font-variant-numeric:tabular-nums}
+.cardpos span{opacity:.6}
+.cp-reset{background:none;border:1px solid var(--line);color:inherit;border-radius:99px;padding:2px 9px;font:inherit;font-size:11px;cursor:pointer;opacity:.75;width:auto}
+.cp-reset:hover{opacity:1}
 .bmin input{max-width:120px}
 .rbtitle .muted{font-weight:500}
 .daypick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 6px}
@@ -1466,7 +1469,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   function cycleOf(name){ if(!cycleMem[name]){ let a=[]; try{ a = JSON.parse(localStorage.getItem("cycle:"+name)||"[]"); }catch(e){} cycleMem[name] = new Set(Array.isArray(a) ? a : []); } return cycleMem[name]; }
   function saveCycle(name){ try{ localStorage.setItem("cycle:"+name, JSON.stringify([...cycleMem[name]])); }catch(e){} }
   // «12 из 55» — сколько карточек текущего круга уже показано
-  function cyclePos(name, deck, keyOf){ const seen = cycleOf(name); const n = deck.reduce((a, x) => a + (seen.has(keyOf(x)) ? 1 : 0), 0); return el("div","cardpos", Math.max(1, n)+" из "+deck.length); }
+  function cyclePos(name, deck, keyOf, S){
+    const seen = cycleOf(name); const n = deck.reduce((a, x) => a + (seen.has(keyOf(x)) ? 1 : 0), 0);
+    const row = el("div","cardpos"); row.appendChild(el("span",null, Math.max(1, n)+" из "+deck.length));
+    if(S && n > 1){ const b = el("button","cp-reset","↺ начать заново"); b.type="button"; b.title="Начать список с начала, в новом порядке";
+      b.addEventListener("click", () => { seen.clear(); saveCycle(name); S.cur = null; S.phase = "ask"; render(); }); row.appendChild(b); }
+    return row;
+  }
   function pickCycle(name, deck, keyOf, recentName){
     const seen = cycleOf(name); let rest = deck.filter(x => !seen.has(keyOf(x)));
     if(!rest.length){ seen.clear(); const last = recentOf(recentName).slice(-1)[0]; rest = deck.length > 1 ? deck.filter(x => keyOf(x)!==last) : deck; }
@@ -1530,7 +1539,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
     if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "ещё учу: верно "+(p.k||0)+" из "+RELEARN_AT : "новый глагол"; card.appendChild(el("div","hint", st)); }
-    card.appendChild(cyclePos(cycV, deck, x => x.key));
+    card.appendChild(cyclePos(cycV, deck, x => x.key, vt));
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode("verbs", VERBS.map(x => ({ en:x.b+" — "+x.p+" — "+x.pp, ru:x.ru, key:x.key }))));
     return box;
@@ -1644,7 +1653,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
     if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "ещё учу: верно "+(p.k||0)+" из "+RELEARN_AT : "новая карточка"; card.appendChild(el("div","hint", G.topics[it.t]+" · "+st)); }
-    card.appendChild(cyclePos(cycG, deck, x => x.key));
+    card.appendChild(cyclePos(cycG, deck, x => x.key, S));
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode(kind, G.items.map(x => ({ en:plainEn(x.en), ru:x.ru, key:x.key }))));
     return box;
@@ -1788,7 +1797,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
     if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "ещё учу: верно "+(p.k||0)+" из "+RELEARN_AT : "новое слово"; card.appendChild(el("div","hint", st)); }
-    card.appendChild(cyclePos(cycW, deck, x => wordKey(x.en)));
+    card.appendChild(cyclePos(cycW, deck, x => wordKey(x.en), tr));
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode(cid, usable));
     return box;
