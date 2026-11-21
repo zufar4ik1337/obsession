@@ -1375,7 +1375,9 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     progSubs[cid+"|"+state.me] = fs.doc("users/"+state.me+"/progress/"+cid).onSnapshot(d => { progress[cid] = (d.exists && d.data()) || {}; scheduleRender(); }, () => {});
   }
   const progOf = (cid, wk) => ((progress[cid]||{}).words||{})[wk] || {};
-  const LEARN_AT = 1, CLEAR_AT = 1;   // одного верного ответа без подсказки хватает, чтобы карточка ушла в «запомнил»
+  // Новая карточка: угадал с первого раза (без подсказки) → «Запомнил»; не угадал → «Ещё учу».
+  // Из «Ещё учу» в «Запомнил» — после 3 верных ответов (всего, не обязательно подряд). Ошибка в «Запомнил» → снова «Ещё учу» с нуля.
+  const LEARN_AT = 1, RELEARN_AT = 3;
   const isLearned = (p) => (p.s||0) >= LEARN_AT && !p.wrong;
   const normEn = (x) => String(x||"").toLowerCase().replace(/[’`]/g,"'").replace(/[.!?"«»()]/g,"").replace(/^(to|a|an|the)\s+/,"").replace(/\s+/g," ").trim();
   const normRu = (x) => String(x||"").toLowerCase().replace(/ё/g,"е").replace(/[.!?"«»()]/g,"").replace(/\s+/g," ").trim();
@@ -1388,10 +1390,11 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   async function recordAnswer(cid, wk, ok, hinted){
     if(!state.me) return;
     const p = progOf(cid, wk); tr.prev = Object.assign({}, p);
-    const s = ok ? (hinted ? (p.s||0) : (p.s||0)+1) : 0;   // верно с подсказкой: серия слова не растёт
-    let wrong = !!p.wrong;
-    if(!ok) wrong = true; else if(!hinted && wrong && s >= CLEAR_AT) wrong = false;
-    const rec = { s, ok:(p.ok||0)+(ok?1:0), bad:(p.bad||0)+(ok?0:1), wrong, last: today() };
+    const s = ok ? (hinted ? (p.s||0) : (p.s||0)+1) : 0;   // верно с подсказкой: не засчитывается
+    let wrong = !!p.wrong, k = p.k||0;
+    if(!ok){ if(!wrong) k = 0; wrong = true; }
+    else if(!hinted && wrong){ k += 1; if(k >= RELEARN_AT){ wrong = false; k = 0; } }
+    const rec = { s, k, ok:(p.ok||0)+(ok?1:0), bad:(p.bad||0)+(ok?0:1), wrong, last: today() };
     progress[cid] = progress[cid] || {}; progress[cid].words = Object.assign({}, progress[cid].words, { [wk]: rec });
     try{ await fs.doc("users/"+state.me+"/progress/"+cid).set({ words: { [wk]: rec } }, {merge:true}); }catch(e){ setStatus(explain(e), true); }
   }
@@ -1420,7 +1423,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     "Well done!","Nailed it!","Awesome!","Spot on!","Brilliant!","You rock!","Killing it!","Perfect!","Smashed it!","Too easy!",
     "Блестяще!","Великолепно!","Вот так и учат языки!","Слово покорено!","Ты на волне!","Красота!","Космос 🚀","Мастер!","На автомате!","Как с куста!"];
   const OOPS = ["Ушло в ошибки — повторим","Ничего, в разборе догоним","Запишем в ошибки, вернёмся к нему","Бывает — повторим позже","Не страшно, ещё встретимся",
-    "Отложили на разбор ошибок","В следующий раз точно","Окей, это слово ещё потренируем","Мимо — но запомнится","Отправили на повтор"];
+    "Отложили в «Ещё учу»","В следующий раз точно","Окей, это слово ещё потренируем","Мимо — но запомнится","Отправили на повтор"];
   const bags = {};
   function fromBag(name, list){
     if(!bags[name] || !bags[name].length){ const a = list.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
@@ -1449,13 +1452,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const box = el("div","trainer");
     if(me && errors.length && vt.mode!=="errors"){
       const bn = el("button","review-banner"); bn.type="button";
-      bn.append(el("b",null,"Разбор ошибок: "+errors.length+" "+plural(errors.length,"глагол","глагола","глаголов")), el("span",null,"Повторить →"));
+      bn.append(el("b",null,"Ещё учу: "+errors.length+" "+plural(errors.length,"глагол","глагола","глаголов")), el("span",null,"Повторить →"));
       bn.addEventListener("click", () => { vt.mode="errors"; vt.cur=null; vt.phase="ask"; render(); }); box.appendChild(bn);
     }
     const card = el("div","card");
     const segs = el("div","segs");
     const seg = el("div","seg");
-    [["all","Все · "+VERBS.length],["errors","Ошибки · "+errors.length]].forEach(([m,label]) => { if(m!=="all" && !me) return;
+    [["all","Все · "+VERBS.length],["errors","Ещё учу · "+errors.length]].forEach(([m,label]) => { if(m!=="all" && !me) return;
       const b = el("button",null,label); b.type="button"; b.setAttribute("aria-selected", String(vt.mode===m));
       b.addEventListener("click", () => { if(vt.mode!==m){ vt.mode=m; vt.cur=null; vt.phase="ask"; render(); } }); seg.appendChild(b); });
     const seg2 = el("div","seg");
@@ -1493,7 +1496,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       row.append(no, yes); card.appendChild(row);
       if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
-    if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "в разборе ошибок" : (p.s ? "верно подряд: "+p.s+" из "+LEARN_AT : "новый глагол"); card.appendChild(el("div","hint", st)); }
+    if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "ещё учу: верно "+(p.k||0)+" из "+RELEARN_AT : "новый глагол"; card.appendChild(el("div","hint", st)); }
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode("verbs", VERBS.map(x => ({ en:x.b+" — "+x.p+" — "+x.pp, ru:x.ru, key:x.key }))));
     return box;
@@ -1558,13 +1561,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const box = el("div","trainer");
     if(me && errors.length && S.mode!=="errors"){
       const bn = el("button","review-banner"); bn.type="button";
-      bn.append(el("b",null,"Разбор ошибок: "+errors.length+" "+plural(errors.length,"карточка","карточки","карточек")), el("span",null,"Повторить →"));
+      bn.append(el("b",null,"Ещё учу: "+errors.length+" "+plural(errors.length,"карточка","карточки","карточек")), el("span",null,"Повторить →"));
       bn.addEventListener("click", () => { S.mode="errors"; S.cur=null; S.phase="ask"; render(); }); box.appendChild(bn);
     }
     const card = el("div","card");
     const segs = el("div","segs");
     const seg = el("div","seg");
-    [["all","Все · "+pool.length],["errors","Ошибки · "+errors.length]].forEach(([m,label]) => { if(m!=="all" && !me) return;
+    [["all","Все · "+pool.length],["errors","Ещё учу · "+errors.length]].forEach(([m,label]) => { if(m!=="all" && !me) return;
       const b = el("button",null,label); b.type="button"; b.setAttribute("aria-selected", String(S.mode===m));
       b.addEventListener("click", () => { if(S.mode!==m){ S.mode=m; S.cur=null; S.phase="ask"; render(); } }); seg.appendChild(b); });
     const seg2 = el("div","seg");
@@ -1605,7 +1608,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       row.append(no, yes); card.appendChild(row);
       if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
-    if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "в разборе ошибок" : (p.s ? "верно подряд: "+p.s+" из "+LEARN_AT : "новая карточка"); card.appendChild(el("div","hint", G.topics[it.t]+" · "+st)); }
+    if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "ещё учу: верно "+(p.k||0)+" из "+RELEARN_AT : "новая карточка"; card.appendChild(el("div","hint", G.topics[it.t]+" · "+st)); }
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode(kind, G.items.map(x => ({ en:plainEn(x.en), ru:x.ru, key:x.key }))));
     return box;
@@ -1622,13 +1625,13 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const box = el("div","trainer");
     if(me && errors.length && tr.mode!=="errors"){
       const bn = el("button","review-banner"); bn.type="button";
-      bn.append(el("b",null,"Разбор ошибок: "+errors.length+" "+plural(errors.length,"слово","слова","слов")), el("span",null,"Повторить →"));
+      bn.append(el("b",null,"Ещё учу: "+errors.length+" "+plural(errors.length,"слово","слова","слов")), el("span",null,"Повторить →"));
       bn.addEventListener("click", () => { tr.mode="errors"; tr.cur=null; tr.phase="ask"; render(); }); box.appendChild(bn);
     }
     const card = el("div","card");
     const segs = el("div","segs");
     const seg = el("div","seg"); seg.setAttribute("role","tablist");
-    [["all","Общие · "+usable.length],["mine","Мои · "+mine.length],["errors","Ошибки · "+errors.length]].forEach(([m,label]) => {
+    [["all","Общие · "+usable.length],["mine","Мои · "+mine.length],["errors","Ещё учу · "+errors.length]].forEach(([m,label]) => {
       if(m!=="all" && !me) return;
       const b = el("button",null,label); b.type="button"; b.setAttribute("role","tab"); b.setAttribute("aria-selected", String(tr.mode===m));
       b.addEventListener("click", () => { if(tr.mode!==m){ tr.mode=m; tr.cur=null; tr.phase="ask"; render(); } }); seg.appendChild(b); });
@@ -1671,19 +1674,19 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       row.append(no, yes); card.appendChild(row);
       if(!me) card.appendChild(el("div","hint","Вступи в челлендж, чтобы прогресс сохранялся"));
     }
-    if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "в разборе ошибок" : (p.s ? "верно подряд: "+p.s+" из "+LEARN_AT : "новое слово"); card.appendChild(el("div","hint", st)); }
+    if(me){ const st = isLearned(p) ? "запомнил" : p.wrong ? "ещё учу: верно "+(p.k||0)+" из "+RELEARN_AT : "новое слово"; card.appendChild(el("div","hint", st)); }
     box.appendChild(card);
     if(me) box.appendChild(myProgressNode(cid, usable));
     return box;
   }
   function myProgressNode(cid, usable){
-    const learned = [], learning = [], errs = [];
-    usable.forEach(w => { const p = progOf(cid, w.key || wordKey(w.en)); if(p.wrong) errs.push(w); else if(isLearned(p)) learned.push(w); else learning.push(w); });
+    const learned = [], learning = [], fresh = [];
+    usable.forEach(w => { const p = progOf(cid, w.key || wordKey(w.en)); if(p.wrong) learning.push(w); else if(isLearned(p)) learned.push(w); else fresh.push(w); });
     const d = el("details","myprog"); if(openPast.has("prog/"+cid)) d.open = true;
     d.addEventListener("toggle", () => { const was = openPast.has("prog/"+cid); d.open ? openPast.add("prog/"+cid) : openPast.delete("prog/"+cid); if(was !== d.open) render(); });
-    const sm = el("summary"); sm.append(el("b",null,"Мой прогресс"), el("span","muted"," · видно только тебе · запомнил "+learned.length+" · учу "+learning.length+" · ошибки "+errs.length)); d.appendChild(sm);
+    const sm = el("summary"); sm.append(el("b",null,"Мой прогресс"), el("span","muted"," · видно только тебе · запомнил "+learned.length+" · учу "+learning.length+" · новые "+fresh.length)); d.appendChild(sm);
     const grid = el("div","prog-grid");
-    [["Запомнил",learned],["Ещё учу",learning],["Ошибки",errs]].forEach(([t,list]) => {
+    [["Запомнил",learned],["Ещё учу",learning],["Новые",fresh]].forEach(([t,list]) => {
       const c = el("div","prog-col"); c.appendChild(el("h3",null,t+" · "+list.length));
       if(!list.length) c.appendChild(el("div","muted","—"));
       list.slice(0,200).forEach(w => { const r = el("div","prog-w"); r.append(el("b",null,w.en), el("span","muted"," — "+w.ru)); c.appendChild(r); });
