@@ -1401,7 +1401,6 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const gl = document.createElementNS(svgNS,"line"); gl.setAttribute("x1",0); gl.setAttribute("x2",100); gl.setAttribute("y1",Y(g)); gl.setAttribute("y2",Y(g)); gl.setAttribute("class","rc-goal"); svg.appendChild(gl);
     const pl = document.createElementNS(svgNS,"polyline"); pl.setAttribute("points", keys.map(k => X(k)+","+Y(mins(days[k]))).join(" ")); pl.setAttribute("class","rc-line"); svg.appendChild(pl);
     plot.appendChild(svg);
-    plot.appendChild(el("span","rc-gl", "норма "+g)); plot.lastChild.style.top = Y(g)+"%";
     const tip = el("div","rc-tip"); tip.hidden = true;
     const pinKey = cid+"/"+uid;
     const showTip = (k, pinned) => {
