@@ -1,6 +1,6 @@
 // Минимальный service worker: делает сайт устанавливаемым и кэширует файлы эмодзи и иконки.
-const CACHE = "obsession-v62";
-const EM_CACHE = "obsession-em-v1";   // эмодзи и иконки не меняются — этот кэш не сбрасывается при обновлениях сайта
+const CACHE = "obsession-v63";
+const EM_CACHE = "obsession-em-v2";   // эмодзи и иконки не меняются — этот кэш не сбрасывается при обновлениях сайта
 self.addEventListener("install", e => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== EM_CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())

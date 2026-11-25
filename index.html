@@ -97,6 +97,9 @@ button.emo:hover{border-color:var(--pc)}
 .streak .sn b{font-family:var(--display);font-weight:700;font-size:26px;color:var(--ink)}
 .streak .sn span{font-size:12px;font-weight:600;color:var(--muted)}
 .emo img{width:100%;height:100%;object-fit:contain;display:block}
+/* круглые анимированные аватарки (набор с машинами): без квадратной подложки */
+.emo:has(img[src*="/z12_"]){border-radius:50%;background:transparent;border-color:transparent}
+.emo:has(img[src*="/z12_"]) img{border-radius:50%}
 .emopop{position:absolute;right:0;top:54px;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;width:min(316px,86vw);display:grid;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 .emotabs{display:flex;gap:4px;flex-wrap:wrap}
 .emotabs button{width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:#959595;padding:2px;cursor:pointer}
