@@ -341,13 +341,13 @@ textarea{resize:vertical;min-height:84px}
 .rc-gl{position:absolute;right:0;transform:translateY(-120%);font-size:10px;opacity:.75}
 .rc-dot{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);padding:0;cursor:pointer;z-index:1}
 .rc-dot.done{background:var(--ink)}
-.rc-dot::after{content:"";position:absolute;inset:-8px}
+.rc-dot::after{content:"";position:absolute;inset:-4px}
 .rc-dot:hover,.rc-dot.on{transform:scale(1.45);z-index:3}
 .rc-tip{position:absolute;z-index:4;transform:translate(-50%, calc(-100% - 14px));width:min(240px,80vw);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:13px}
 .rc-tip.below{transform:translate(-50%, 14px)}
 .rc-tip[hidden]{display:none}
 /* невидимый «мостик» между точкой и подсказкой, чтобы курсор не терял её по дороге */
-.rc-tip::before{content:"";position:absolute;left:0;right:0;bottom:-16px;height:16px}
+.rc-tip::before{content:"";position:absolute;left:calc(var(--bx, 50%) - 7px);width:14px;bottom:-16px;height:16px}
 .rc-tip.below::before{bottom:auto;top:-16px}
 .col:has(.rc-tip:not([hidden])), .rchart:has(.rc-tip:not([hidden])){position:relative;z-index:20}
 .rc-th{display:flex;gap:8px;align-items:center;justify-content:space-between}
@@ -1417,6 +1417,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       tip.classList.toggle("below", Y(mins(r)) < 45);
       tip.style.top = Y(mins(r))+"%";
       plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); const d = plot.querySelector('[data-k="'+k+'"]'); if(d) d.classList.add("on");
+      // «мостик» к подсказке — только узкая полоса прямо над/под точкой
+      if(d){ const tr = tip.getBoundingClientRect(), dr = d.getBoundingClientRect(); tip.style.setProperty("--bx", Math.round(dr.left + dr.width/2 - tr.left)+"px"); }
       if(pinned) chartPin[pinKey] = k;
     };
     // мышь: подсказка живёт, пока курсор на точке или на кнопке «Открыть отчёт»; ушёл — закрылась
