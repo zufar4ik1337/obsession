@@ -345,6 +345,14 @@ textarea{resize:vertical;min-height:84px}
 .rc-dot:hover,.rc-dot.on{transform:scale(1.45);z-index:3}
 .rc-tip{position:absolute;z-index:4;transform:translate(-50%, calc(-100% - 14px));width:min(240px,80vw);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:13px}
 .rc-tip.below{transform:translate(-50%, 14px)}
+.rc-area{position:absolute;top:-8px;bottom:-8px;left:-8px;right:-8px;overflow:hidden;touch-action:pan-y}
+.rc-area .rc-svg{top:8px;bottom:8px;left:8px;right:8px;width:calc(100% - 16px);height:calc(100% - 16px)}
+.rchart.zoomed .rc-area{cursor:grab}
+.rchart.zoomed .rc-area:active{cursor:grabbing}
+.rc-ctl{display:flex;gap:4px;justify-content:flex-end;margin-bottom:-6px}
+.rc-ctl .btn{width:auto;min-width:30px;padding:2px 8px;font-size:15px;line-height:1.2}
+.rc-ctl .btn:disabled{opacity:.35}
+.rc-tip .btn{justify-self:center}
 .rc-tip[hidden]{display:none}
 /* невидимый «мостик» между точкой и подсказкой, чтобы курсор не терял её по дороге */
 .rc-tip::before{content:"";position:absolute;left:calc(var(--bx, 50%) - 7px);width:14px;bottom:-16px;height:16px}
@@ -352,7 +360,7 @@ textarea{resize:vertical;min-height:84px}
 .col:has(.rc-tip:not([hidden])), .rchart:has(.rc-tip:not([hidden])){position:relative;z-index:20}
 .rc-th{display:flex;gap:8px;align-items:center;justify-content:space-between}
 .rc-ts{white-space:pre-wrap;overflow-wrap:anywhere;opacity:.85;max-height:7.5em;overflow:hidden}
-.rc-tip .btn{width:auto;justify-self:start}
+.rc-tip .btn{width:auto;justify-self:center}
 .rc-axis{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.7;margin-left:34px}
 .entry.flash{animation:eflash 1.6s ease}
 @keyframes eflash{0%,40%{box-shadow:0 0 0 2px var(--ink)}100%{box-shadow:none}}
@@ -1381,6 +1389,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     render();
     setTimeout(() => { const n = document.getElementById("e-"+uid+"-"+k); if(!n) return; n.scrollIntoView({ block:"center", behavior:"smooth" }); n.classList.remove("flash"); void n.offsetWidth; n.classList.add("flash"); }, 30);
   }
+  const chartView = {};   // масштаб графика по колонке: { v0, v1 } — видимая доля времени 0..1
   function chartNode(cid, uid){
     const days = daysOf(cid, uid), keys = Object.keys(days).filter(isKey).sort();
     const box = el("div","rchart"); if(!keys.length) return box;
@@ -1392,9 +1401,20 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const STEPS = [1,2,5,10,15,20,30,45,60,90,120,180,240];
     const step = STEPS.find(x => (vMax - vMin) / x <= 4) || 300;
     const lo = Math.max(0, Math.floor((vMin - step*0.4) / step) * step), hi = Math.max(lo + step, Math.ceil((vMax + step*0.4) / step) * step);
-    const X = (k) => (span ? Math.round((parseKey(k) - parseKey(first)) / 864e5) / span : 0.5) * 100;
+    const pinKey = cid+"/"+uid;
+    const view = chartView[pinKey] || (chartView[pinKey] = { v0:0, v1:1 });
+    const minW = Math.min(1, 6 / span);   // сильнее всего — примерно неделя на весь график
+    const frac = (k) => span ? Math.round((parseKey(k) - parseKey(first)) / 864e5) / span : 0.5;
+    const X = (k) => (frac(k) - view.v0) / (view.v1 - view.v0) * 100;
     const Y = (m) => 100 - Math.max(0, Math.min(1, (m - lo) / (hi - lo))) * 100;
+    const dayAt = (f) => addDays(first, Math.round(f * span));
+    // кнопки масштаба
+    const ctl = el("div","rc-ctl");
+    const zOut = el("button","btn ghost mini","−"), zIn = el("button","btn ghost mini","+"), zReset = el("button","btn ghost mini","⟲");
+    [[zOut,"Отдалить"],[zIn,"Приблизить"],[zReset,"Показать весь график"]].forEach(([b,t]) => { b.type="button"; b.title=t; b.setAttribute("aria-label",t); });
+    ctl.append(zReset, zOut, zIn); box.appendChild(ctl);
     const plot = el("div","rc-plot");
+    const area = el("div","rc-area");
     const svgNS = "http://www.w3.org/2000/svg", svg = document.createElementNS(svgNS,"svg");
     svg.setAttribute("viewBox","0 0 100 100"); svg.setAttribute("preserveAspectRatio","none"); svg.setAttribute("class","rc-svg"); svg.setAttribute("aria-hidden","true");
     // деления шкалы; ближайшее к норме (кроме 0) заменяем самой нормой — она подписывает пунктир
@@ -1404,10 +1424,9 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       if(t !== g){ const ln = document.createElementNS(svgNS,"line"); ln.setAttribute("x1",0); ln.setAttribute("x2",100); ln.setAttribute("y1",Y(t)); ln.setAttribute("y2",Y(t)); ln.setAttribute("class","rc-grid"); svg.appendChild(ln); }
       const lb = el("span","rc-yl"+(t===g?" goal":""), String(t)); lb.style.top = Y(t)+"%"; plot.appendChild(lb); });
     const gl = document.createElementNS(svgNS,"line"); gl.setAttribute("x1",0); gl.setAttribute("x2",100); gl.setAttribute("y1",Y(g)); gl.setAttribute("y2",Y(g)); gl.setAttribute("class","rc-goal"); svg.appendChild(gl);
-    const pl = document.createElementNS(svgNS,"polyline"); pl.setAttribute("points", keys.map(k => X(k)+","+Y(mins(days[k]))).join(" ")); pl.setAttribute("class","rc-line"); svg.appendChild(pl);
-    plot.appendChild(svg);
+    const pl = document.createElementNS(svgNS,"polyline"); pl.setAttribute("class","rc-line"); svg.appendChild(pl);
+    area.appendChild(svg); plot.appendChild(area);
     const tip = el("div","rc-tip"); tip.hidden = true;
-    const pinKey = cid+"/"+uid;
     const showTip = (k, pinned) => {
       const r = days[k]; tip.innerHTML = ""; tip.hidden = false;
       const head = el("div","rc-th"); head.append(el("b",null, k===today() ? "Сегодня" : human(k)), el("span","pill "+(mins(r)>=g?"done":"part"), mins(r)+" мин")); tip.appendChild(head);
@@ -1421,30 +1440,71 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       if(d){ const tr = tip.getBoundingClientRect(), dr = d.getBoundingClientRect(); tip.style.setProperty("--bx", Math.round(dr.left + dr.width/2 - tr.left)+"px"); }
       if(pinned) chartPin[pinKey] = k;
     };
-    // мышь: подсказка живёт, пока курсор на точке или на кнопке «Открыть отчёт»; ушёл — закрылась
     const hover = window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches;
-    let hideT = null;
     const reallyHide = () => { delete chartPin[pinKey]; tip.hidden = true; plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); };
-    const hideTip = () => { clearTimeout(hideT); hideT = setTimeout(() => { if(tip.matches(":hover") || plot.querySelector(".rc-dot:hover")) return; if(!hover && chartPin[pinKey]) return; reallyHide(); }, 250); };
-    tip.addEventListener("mouseenter", () => clearTimeout(hideT));
     // ушёл с подсказки не на точку — закрыть сразу
     tip.addEventListener("mouseleave", (ev) => { if(!hover) return; const to = ev.relatedTarget; if(to && to.closest && to.closest(".rc-dot")) return; reallyHide(); });
-    keys.forEach(k => {
+    const dots = keys.map(k => {
       const m = mins(days[k]), b = el("button","rc-dot"+(m>=g?" done":" part")); b.type="button"; b.dataset.k = k;
-      b.style.left = X(k)+"%"; b.style.top = Y(m)+"%";
+      b.style.top = "calc(8px + (100% - 16px) * "+(Y(m)/100)+")";
       b.setAttribute("aria-label", human(k)+", "+m+" мин");
-      b.addEventListener("mouseenter", () => { clearTimeout(hideT); showTip(k, false); });
+      b.addEventListener("mouseenter", () => { if(!drag) showTip(k, false); });
       // ушёл с точки: если на подсказку — оставить, иначе закрыть сразу
       b.addEventListener("mouseleave", (ev) => { if(!hover) return; const to = ev.relatedTarget; if(to && tip.contains(to)) return; reallyHide(); });
       b.addEventListener("focus", () => showTip(k, false));
       // мышь: клик по точке сразу открывает отчёт; телефон: тап показывает подсказку, второй тап по той же точке — открывает
-      b.addEventListener("click", (ev) => { ev.stopPropagation(); if(hover || chartPin[pinKey]===k){ reallyHide(); openReport(cid, uid, k); } else showTip(k, true); });
-      plot.appendChild(b);
+      b.addEventListener("click", (ev) => { ev.stopPropagation(); if(moved) return; if(hover || chartPin[pinKey]===k){ reallyHide(); openReport(cid, uid, k); } else showTip(k, true); });
+      area.appendChild(b); return [k, b];
     });
     plot.appendChild(tip);
     box.appendChild(plot);
-    const ax = el("div","rc-axis"); ax.append(el("span",null, fmtDayShort(first)), el("span","muted", keys.length+" "+plural(keys.length,"отчёт","отчёта","отчётов")+" · мин в день, макс "+maxM), el("span",null, fmtDayShort(last))); box.appendChild(ax);
-    if(!(window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches) && chartPin[pinKey] && days[chartPin[pinKey]]) setTimeout(() => showTip(chartPin[pinKey], true), 0);
+    const axL = el("span"), axM = el("span","muted"), axR = el("span");
+    const ax = el("div","rc-axis"); ax.append(axL, axM, axR); box.appendChild(ax);
+    // раскладка под текущий масштаб
+    const layout = () => {
+      dots.forEach(([k, b]) => { const x = X(k); b.style.left = "calc(8px + (100% - 16px) * "+(x/100)+")"; b.style.display = (x < -3 || x > 103) ? "none" : ""; });
+      pl.setAttribute("points", keys.map(k => X(k)+","+Y(mins(days[k]))).join(" "));
+      const zoomed = view.v1 - view.v0 < 0.999;
+      axL.textContent = fmtDayShort(dayAt(view.v0)); axR.textContent = fmtDayShort(dayAt(view.v1));
+      const vis = keys.filter(k => { const f = frac(k); return f >= view.v0 - 1e-9 && f <= view.v1 + 1e-9; }).length;
+      axM.textContent = (zoomed ? vis+" из " : "")+keys.length+" "+plural(keys.length,"отчёт","отчёта","отчётов")+" · макс "+maxM+" мин";
+      zReset.hidden = !zoomed; zOut.disabled = !zoomed; zIn.disabled = (view.v1 - view.v0) <= minW + 1e-9;
+      box.classList.toggle("zoomed", zoomed);
+    };
+    const zoomAt = (factor, anchor) => {   // anchor — точка в видимой области 0..1, которая остаётся на месте
+      const w = view.v1 - view.v0, nw = Math.max(minW, Math.min(1, w / factor));
+      const c = view.v0 + anchor * w; let v0 = c - anchor * nw; v0 = Math.max(0, Math.min(1 - nw, v0));
+      view.v0 = v0; view.v1 = v0 + nw; reallyHide(); layout();
+    };
+    const panBy = (dFrac) => { const w = view.v1 - view.v0; let v0 = Math.max(0, Math.min(1 - w, view.v0 + dFrac)); view.v0 = v0; view.v1 = v0 + w; layout(); };
+    zIn.addEventListener("click", (ev) => { ev.stopPropagation(); zoomAt(1.6, 0.5); });
+    zOut.addEventListener("click", (ev) => { ev.stopPropagation(); zoomAt(1/1.6, 0.5); });
+    zReset.addEventListener("click", (ev) => { ev.stopPropagation(); view.v0 = 0; view.v1 = 1; reallyHide(); layout(); });
+    // колесо мыши: масштаб вокруг курсора (страница не прокручивается, пока есть куда масштабировать)
+    area.addEventListener("wheel", (ev) => {
+      const r = area.getBoundingClientRect(), a = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+      const zoomed = view.v1 - view.v0 < 0.999, canIn = (view.v1 - view.v0) > minW + 1e-9;
+      if(Math.abs(ev.deltaX) > Math.abs(ev.deltaY) && zoomed){ ev.preventDefault(); panBy(ev.deltaX / r.width * (view.v1 - view.v0)); return; }
+      if(ev.deltaY < 0 ? !canIn : !zoomed) return;
+      ev.preventDefault(); zoomAt(ev.deltaY < 0 ? 1.25 : 1/1.25, a);
+    }, { passive:false });
+    // перетаскивание (мышь/палец) — сдвиг; два пальца — масштаб
+    const pts = new Map(); let drag = false, moved = false, lastX = 0, pinch0 = 0, pinchW = 0, pinchC = 0;
+    area.addEventListener("pointerdown", (ev) => {
+      pts.set(ev.pointerId, ev.clientX); moved = false;
+      if(pts.size === 1){ drag = true; lastX = ev.clientX; }
+      if(pts.size === 2){ const xs = [...pts.values()]; pinch0 = Math.abs(xs[0]-xs[1]) || 1; pinchW = view.v1 - view.v0; const r = area.getBoundingClientRect(); pinchC = ((xs[0]+xs[1])/2 - r.left) / r.width; }
+    });
+    area.addEventListener("pointermove", (ev) => {
+      if(!pts.has(ev.pointerId)) return; pts.set(ev.pointerId, ev.clientX);
+      const r = area.getBoundingClientRect();
+      if(pts.size >= 2){ const xs = [...pts.values()]; const d = Math.abs(xs[0]-xs[1]) || 1; const want = Math.max(minW, Math.min(1, pinchW * pinch0 / d)); const w = view.v1 - view.v0; zoomAt(w / want, pinchC); moved = true; return; }
+      if(drag && (view.v1 - view.v0) < 0.999){ const dx = ev.clientX - lastX; if(Math.abs(dx) > 2 || moved){ if(!moved){ moved = true; try{ area.setPointerCapture(ev.pointerId); }catch(e){} reallyHide(); } panBy(-dx / r.width * (view.v1 - view.v0)); lastX = ev.clientX; } }
+    });
+    const up = (ev) => { pts.delete(ev.pointerId); if(!pts.size){ drag = false; setTimeout(() => { moved = false; }, 0); } };
+    area.addEventListener("pointerup", up); area.addEventListener("pointercancel", up); area.addEventListener("pointerleave", (ev) => { if(ev.pointerType === "mouse") up(ev); });
+    layout();
+    if(!hover && chartPin[pinKey] && days[chartPin[pinKey]]) setTimeout(() => showTip(chartPin[pinKey], true), 0);
     box.addEventListener("click", () => { if(chartPin[pinKey]){ delete chartPin[pinKey]; tip.hidden = true; plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); } });
     return box;
   }
