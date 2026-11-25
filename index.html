@@ -342,6 +342,9 @@ textarea{resize:vertical;min-height:84px}
 .rc-dot:hover,.rc-dot.on{transform:scale(1.45);z-index:3}
 .rc-tip{position:absolute;z-index:4;transform:translate(-50%, calc(-100% - 14px));width:min(240px,80vw);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:13px}
 .rc-tip.below{transform:translate(-50%, 14px)}
+.rc-tip{pointer-events:none}
+.rc-tip .btn{pointer-events:auto}
+.col:has(.rc-tip:not([hidden])), .rchart:has(.rc-tip:not([hidden])){position:relative;z-index:20}
 .rc-th{display:flex;gap:8px;align-items:center;justify-content:space-between}
 .rc-ts{white-space:pre-wrap;overflow-wrap:anywhere;opacity:.85;max-height:7.5em;overflow:hidden}
 .rc-tip .btn{width:auto;justify-self:start}
@@ -1400,21 +1403,28 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); const d = plot.querySelector('[data-k="'+k+'"]'); if(d) d.classList.add("on");
       if(pinned) chartPin[pinKey] = k;
     };
-    const hideTip = () => { if(chartPin[pinKey]) { showTip(chartPin[pinKey], true); return; } tip.hidden = true; plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); };
+    // мышь: подсказка живёт, пока курсор на точке или на кнопке «Открыть отчёт»; ушёл — закрылась
+    const hover = window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches;
+    let hideT = null;
+    const reallyHide = () => { delete chartPin[pinKey]; tip.hidden = true; plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); };
+    const hideTip = () => { clearTimeout(hideT); hideT = setTimeout(() => { if(tip.matches(":hover")) return; if(!hover && chartPin[pinKey]) return; reallyHide(); }, 180); };
+    tip.addEventListener("mouseenter", () => clearTimeout(hideT));
+    tip.addEventListener("mouseleave", () => { if(hover) hideTip(); });
     keys.forEach(k => {
       const m = mins(days[k]), b = el("button","rc-dot"+(m>=g?" done":" part")); b.type="button"; b.dataset.k = k;
       b.style.left = X(k)+"%"; b.style.top = Y(m)+"%";
       b.setAttribute("aria-label", human(k)+", "+m+" мин");
-      b.addEventListener("mouseenter", () => showTip(k, false));
-      b.addEventListener("mouseleave", hideTip);
+      b.addEventListener("mouseenter", () => { clearTimeout(hideT); showTip(k, false); });
+      b.addEventListener("mouseleave", () => { if(hover) hideTip(); });
       b.addEventListener("focus", () => showTip(k, false));
-      b.addEventListener("click", (ev) => { ev.stopPropagation(); showTip(k, true); });
+      // мышь: клик по точке сразу открывает отчёт; телефон: тап показывает подсказку, второй тап по той же точке — открывает
+      b.addEventListener("click", (ev) => { ev.stopPropagation(); if(hover || chartPin[pinKey]===k){ reallyHide(); openReport(cid, uid, k); } else showTip(k, true); });
       plot.appendChild(b);
     });
     plot.appendChild(tip);
     box.appendChild(plot);
     const ax = el("div","rc-axis"); ax.append(el("span",null, fmtDayShort(first)), el("span","muted", keys.length+" "+plural(keys.length,"отчёт","отчёта","отчётов")+" · до "+maxM+" мин"), el("span",null, fmtDayShort(last))); box.appendChild(ax);
-    if(chartPin[pinKey] && days[chartPin[pinKey]]) setTimeout(() => showTip(chartPin[pinKey], true), 0);
+    if(!(window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches) && chartPin[pinKey] && days[chartPin[pinKey]]) setTimeout(() => showTip(chartPin[pinKey], true), 0);
     box.addEventListener("click", () => { if(chartPin[pinKey]){ delete chartPin[pinKey]; tip.hidden = true; plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); } });
     return box;
   }
