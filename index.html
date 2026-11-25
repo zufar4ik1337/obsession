@@ -1260,7 +1260,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const g = goalMinOf(cid), dId="fDate", mId="fMin";
     const date = el("input"); date.type="date"; date.id=dId; date.max=today(); date.value = drafts[dId] || defaultRepDate(cid);
     const existing = daysOf(cid, state.me)[date.value];
-    const mn = el("input"); mn.type="number"; mn.id=mId; mn.min=1; mn.max=600; mn.value = drafts[mId] ?? (existing ? mins(existing) : g);
+    const mn = el("input"); mn.type="number"; mn.id=mId; mn.min=0; mn.max=600; mn.value = "0"; mn.readOnly = true; mn.tabIndex = -1;   // в отчёте по книгам «Минут всего» — только сумма по книгам
     const all = fieldsOf(cid), bf = all.filter(x => x.id!=="words"), wf = all.find(x => x.id==="words");
     const tf = bf.find(x => x.id!=="text" && /книг|назван|автор/i.test(x.label)) || bf.find(x => x.type==="short" && x.id!=="text");   // поле «какую книгу…» или первое короткое = название блока
     const valOf = (b, fd) => { if(!b) return ""; if(fd.id==="text") return typeof b.text==="string" ? b.text : ""; const v = b.v && typeof b.v==="object" ? b.v[fd.id] : undefined; return Array.isArray(v) ? v.join("\n") : (v==null ? "" : String(v)); };
@@ -1276,12 +1276,12 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const titleOf = (b, i) => ((tf ? b.vals[tf.id] : b.vals._t) || "").trim() || (noun+" "+(i+1));
     // минуты по каждой книге складываются в «Минут всего»
     const sumMin = () => st.blocks.reduce((a, b) => a + (Math.max(0, Math.round(Number(String(b.vals._m||"").replace(",","."))) || 0)), 0);
-    if(sumMin() > 0){ mn.value = String(sumMin()); mn.readOnly = true; mn.title = "Сумма минут по всем блокам"; }
+    mn.value = String(sumMin()); mn.title = "Считается само: сумма минут по всем книгам";
     const title = existing ? "Правка отчёта за "+(date.value===today()?"сегодня":human(date.value)) : (date.value===today() ? "Отчёт за сегодня" : "Отчёт за "+human(date.value));
     f.appendChild(el("h3",null,title));
     if(existing && (typedDraft() || blocksTyped(blockState[cid]))) f.appendChild(el("div","msg err","За "+(date.value===today()?"сегодня":human(date.value))+" уже есть отчёт. Если сохранить, он заменится тем, что сейчас в форме."));
     else if(!existing && !drafts[dId] && date.value!==today()) f.appendChild(el("div","hint","Сейчас ночь, поэтому отчёт по умолчанию за вчера. Если он за сегодня — поменяй дату, текст не пропадёт."));
-    const r = el("div","row2"); const l1 = el("label",null,"Дата"); l1.htmlFor=dId; l1.appendChild(date); const l2 = el("label",null,"Минут всего"+(sumMin() > 0 ? " — сумма" : "")+" (нужно "+g+")"); l2.htmlFor=mId; l2.appendChild(mn); r.append(l1,l2); f.appendChild(r);
+    const r = el("div","row2"); const l1 = el("label",null,"Дата"); l1.htmlFor=dId; l1.appendChild(date); const l2 = el("label",null,"Минут всего — сумма (нужно "+g+")"); l2.htmlFor=mId; l2.appendChild(mn); r.append(l1,l2); f.appendChild(r);
     [date,mn].forEach(x => x.addEventListener("input", () => { drafts[x.id] = x.value; backupDraft(cid); }));
     date.addEventListener("change", () => { if(!isKey(date.value)) return; drafts[dId]=date.value; const st0 = blockState[cid];
       if(blocksTyped(st0) || typedDraft()){ if(st0) st0.date = date.value; } else clearRepDrafts(); backupDraft(cid); render(); });
@@ -1307,8 +1307,8 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     };
     const addMin = () => {
       const n = el("input"); n.type="number"; n.min=0; n.max=600; n.inputMode="numeric"; n.id="bf-"+st.act+"-_m"; n.placeholder="0"; n.value = cur.vals._m || "";
-      n.addEventListener("input", () => { cur.vals._m = n.value; const t = sumMin(); if(t > 0){ mn.value = String(t); mn.readOnly = true; } else { mn.readOnly = false; } drafts[mId] = mn.value; backupDraft(cid); });
-      const l = el("label","bmin","Минут на эту "+noun.toLowerCase().replace(/а$/,"у").replace(/я$/,"ю")); l.htmlFor = n.id; l.appendChild(n); pane.appendChild(l);
+      n.addEventListener("input", () => { cur.vals._m = n.value; mn.value = String(sumMin()); backupDraft(cid); });
+      const l = el("label","bmin","Минут на эту "+noun.toLowerCase().replace(/а$/,"у").replace(/я$/,"ю")+" *"); l.htmlFor = n.id; l.appendChild(n); pane.appendChild(l);
     };
     if(!tf){ const [l, n] = mkInput(null, "_t", "Название "+noun.toLowerCase().replace(/а$/,"и").replace(/я$/,"и"), "short"); n.placeholder = "например, «Царь-рыба»"; if(planTitles.length){ n.setAttribute("list","bPlanList"); } pane.appendChild(l); addMin(); }
     (tf ? [tf].concat(bf.filter(x => x!==tf)) : bf).forEach(fd => { const [l, n] = mkInput(fd, fd.id, fd.label, fd.type); if(fd===tf && planTitles.length) n.setAttribute("list","bPlanList"); if(fd.id==="text" && !fd.label) n.placeholder="Что прочитал"; pane.appendChild(l); if(fd===tf) addMin(); });
@@ -1337,9 +1337,10 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
       const filled = st.blocks.filter(b => Object.values(b.vals).some(x => String(x||"").trim()));
       if(!filled.length){ show("Заполни хотя бы один блок.", true); return; }
       for(let i=0;i<st.blocks.length;i++){ const b = st.blocks[i]; if(!filled.includes(b)) continue;
+        if(!(Math.round(Number(String(b.vals._m||"").replace(",","."))) > 0)){ st.act = i; render(); setTimeout(() => { const m2 = document.querySelector(".report .msg"); if(m2){ m2.textContent = "«"+titleOf(b,i)+"»: укажи, сколько минут читал эту "+noun.toLowerCase().replace(/а$/,"у").replace(/я$/,"ю")+"."; m2.classList.remove("hidden"); m2.classList.add("err"); } const n = $("bf-"+i+"-_m"); if(n) n.focus(); }, 0); return; }
         for(const fd of bf){ if(fd.req && !String(b.vals[fd.id]||"").trim()){ st.act = i; render(); setTimeout(() => { const m2 = document.querySelector(".report .msg"); if(m2){ m2.textContent = "«"+titleOf(b,i)+"»: заполни поле «"+fd.label+"»."; m2.classList.remove("hidden"); m2.classList.add("err"); } }, 0); return; } } }
       const now = new Date().toISOString(); const prev = daysOf(cid, state.me)[k];
-      const tot = sumMin(); const rec = { minutes: clampNum(tot > 0 ? tot : mn.value,1,600,g), createdAt:(prev&&prev.createdAt)||now, updatedAt:now };
+      const tot = sumMin(); if(tot < 1){ show("Укажи минуты хотя бы для одной книги.", true); return; } const rec = { minutes: Math.min(600, tot), createdAt:(prev&&prev.createdAt)||now, updatedAt:now };
       rec.b = filled.map((b, i) => { const o = { t: titleOf(b, i).slice(0,200), v:{} }; if(tf) o.tf = tf.id; const bm = Math.round(Number(String(b.vals._m||"").replace(",","."))); if(bm > 0) o.m = Math.min(bm, 600);
         bf.forEach(fd => { const raw = String(b.vals[fd.id]||"").trim(); if(!raw) return;
           if(fd===tf) return;
