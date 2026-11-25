@@ -325,6 +325,26 @@ textarea{resize:vertical;min-height:84px}
 
 /* plan + report fields */
 .danger-txt{color:#e0a0a0}
+.coltools{display:flex;flex-wrap:wrap;gap:6px}
+.coltools .btn{width:auto}
+.rchart{display:grid;gap:4px;border:1px solid var(--line);border-radius:12px;padding:12px 14px 8px;background:rgba(255,255,255,.02)}
+.rc-plot{position:relative;height:130px;margin:10px 6px 4px}
+.rc-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.rc-line{fill:none;stroke:var(--muted);stroke-width:1.5;vector-effect:non-scaling-stroke;opacity:.7}
+.rc-goal{stroke:var(--line);stroke-width:1;stroke-dasharray:4 4;vector-effect:non-scaling-stroke}
+.rc-gl{position:absolute;right:0;transform:translateY(-120%);font-size:10px;opacity:.5}
+.rc-dot{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);padding:0;cursor:pointer;z-index:1}
+.rc-dot.done{background:var(--ink)}
+.rc-dot::after{content:"";position:absolute;inset:-8px}
+.rc-dot:hover,.rc-dot.on{transform:scale(1.45);z-index:3}
+.rc-tip{position:absolute;z-index:4;transform:translate(-50%, calc(-100% - 14px));width:min(240px,80vw);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:13px}
+.rc-tip.below{transform:translate(-50%, 14px)}
+.rc-th{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.rc-ts{white-space:pre-wrap;overflow-wrap:anywhere;opacity:.85;max-height:7.5em;overflow:hidden}
+.rc-tip .btn{width:auto;justify-self:start}
+.rc-axis{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.7}
+.entry.flash{animation:eflash 1.6s ease}
+@keyframes eflash{0%,40%{box-shadow:0 0 0 2px var(--ink)}100%{box-shadow:none}}
 .cardpos{font-size:12px;margin-top:6px;display:flex;gap:10px;justify-content:center;align-items:center;font-variant-numeric:tabular-nums}
 .cardpos span{opacity:.6}
 .cp-reset{background:none;border:1px solid var(--line);color:inherit;border-radius:99px;padding:2px 9px;font:inherit;font-size:11px;cursor:pointer;opacity:.75;width:auto}
@@ -1010,6 +1030,14 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const stats = el("div","stats");
     [["лучшая серия",st.best],["дней",st.full],["минут",st.total]].concat(ch(cid).dictionary?[["слов",st.words]]:[]).forEach(([l,v]) => { const d=el("div"); d.appendChild(el("b","num",String(v))); d.appendChild(document.createTextNode(l)); stats.appendChild(d); });
     col.appendChild(stats);
+    { const dk = Object.keys(daysOf(cid, uid)); if(dk.length){
+      const key3 = cid+"/"+uid, tools = el("div","coltools");
+      const gb = el("button","btn ghost mini"+(chartOpen.has(key3)?" on":""), chartOpen.has(key3) ? "Скрыть график" : "📈 График"); gb.type="button"; gb.setAttribute("aria-expanded", String(chartOpen.has(key3)));
+      gb.addEventListener("click", () => { chartOpen.has(key3) ? chartOpen.delete(key3) : chartOpen.add(key3); render(); }); tools.appendChild(gb);
+      if(mine){ const db = el("button","btn ghost mini","⬇ Скачать мои отчёты"); db.type="button"; db.addEventListener("click", () => downloadReports(cid)); tools.appendChild(db); }
+      col.appendChild(tools);
+      if(chartOpen.has(key3)) col.appendChild(chartNode(cid, uid));
+    } }
     if(ch(cid).dictionary) col.appendChild(cardsNode(cid, uid));
     if(mine){
       const hasToday = !!daysOf(cid, uid)[today()];
@@ -1325,9 +1353,99 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     });
     return f;
   }
+  // ---------- график отчётов и выгрузка ----------
+  const chartOpen = new Set(), chartPin = {};
+  function reportSummary(r){
+    if(!r || typeof r!=="object") return "";
+    if(Array.isArray(r.b) && r.b.length) return r.b.map(b => str(b && b.t, 200) + (b && Number(b.m) > 0 ? " — "+Math.round(b.m)+" мин" : "")).filter(Boolean).join("\n");
+    if(typeof r.text==="string" && r.text.trim()) return r.text.trim().slice(0,160) + (r.text.length > 160 ? "…" : "");
+    const v = r.v && typeof r.v==="object" ? Object.values(r.v).find(x => x!=null && String(x).trim()) : null;
+    return v ? String(Array.isArray(v) ? v.join(", ") : v).slice(0,160) : "";
+  }
+  function openReport(cid, uid, k){
+    const key2 = cid+"/"+uid, keys = Object.keys(daysOf(cid, uid)).sort().reverse(), i = keys.indexOf(k);
+    if(i < 0) return;
+    if(i > 0){ showAllFeed.add(key2); feedShown[key2] = Math.max(feedShown[key2] || 1+FEED_FIRST, i+1); }
+    render();
+    setTimeout(() => { const n = document.getElementById("e-"+uid+"-"+k); if(!n) return; n.scrollIntoView({ block:"center", behavior:"smooth" }); n.classList.remove("flash"); void n.offsetWidth; n.classList.add("flash"); }, 30);
+  }
+  function chartNode(cid, uid){
+    const days = daysOf(cid, uid), keys = Object.keys(days).filter(isKey).sort();
+    const box = el("div","rchart"); if(!keys.length) return box;
+    const first = keys[0], last = keys[keys.length-1] > today() ? keys[keys.length-1] : today();
+    const span = Math.max(1, Math.round((parseKey(last) - parseKey(first)) / 864e5));
+    const g = goalMinOf(cid), maxM = Math.max(g, ...keys.map(k => mins(days[k]))) || 1;
+    const X = (k) => (span ? Math.round((parseKey(k) - parseKey(first)) / 864e5) / span : 0.5) * 100;
+    const Y = (m) => 100 - Math.min(1, m / maxM) * 100;
+    const plot = el("div","rc-plot");
+    const svgNS = "http://www.w3.org/2000/svg", svg = document.createElementNS(svgNS,"svg");
+    svg.setAttribute("viewBox","0 0 100 100"); svg.setAttribute("preserveAspectRatio","none"); svg.setAttribute("class","rc-svg"); svg.setAttribute("aria-hidden","true");
+    const gl = document.createElementNS(svgNS,"line"); gl.setAttribute("x1",0); gl.setAttribute("x2",100); gl.setAttribute("y1",Y(g)); gl.setAttribute("y2",Y(g)); gl.setAttribute("class","rc-goal"); svg.appendChild(gl);
+    const pl = document.createElementNS(svgNS,"polyline"); pl.setAttribute("points", keys.map(k => X(k)+","+Y(mins(days[k]))).join(" ")); pl.setAttribute("class","rc-line"); svg.appendChild(pl);
+    plot.appendChild(svg);
+    plot.appendChild(el("span","rc-gl", g+" мин")); plot.lastChild.style.top = Y(g)+"%";
+    const tip = el("div","rc-tip"); tip.hidden = true;
+    const pinKey = cid+"/"+uid;
+    const showTip = (k, pinned) => {
+      const r = days[k]; tip.innerHTML = ""; tip.hidden = false;
+      const head = el("div","rc-th"); head.append(el("b",null, k===today() ? "Сегодня" : human(k)), el("span","pill "+(mins(r)>=g?"done":"part"), mins(r)+" мин")); tip.appendChild(head);
+      const sm = reportSummary(r); if(sm) tip.appendChild(el("div","rc-ts", sm));
+      const ob = el("button","btn mini","Открыть отчёт →"); ob.type="button"; ob.addEventListener("click", (ev) => { ev.stopPropagation(); delete chartPin[pinKey]; openReport(cid, uid, k); }); tip.appendChild(ob);
+      const x = X(k); tip.style.left = Math.min(Math.max(x, 18), 82)+"%";
+      tip.classList.toggle("below", Y(mins(r)) < 45);
+      tip.style.top = Y(mins(r))+"%";
+      plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); const d = plot.querySelector('[data-k="'+k+'"]'); if(d) d.classList.add("on");
+      if(pinned) chartPin[pinKey] = k;
+    };
+    const hideTip = () => { if(chartPin[pinKey]) { showTip(chartPin[pinKey], true); return; } tip.hidden = true; plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); };
+    keys.forEach(k => {
+      const m = mins(days[k]), b = el("button","rc-dot"+(m>=g?" done":" part")); b.type="button"; b.dataset.k = k;
+      b.style.left = X(k)+"%"; b.style.top = Y(m)+"%";
+      b.setAttribute("aria-label", human(k)+", "+m+" мин");
+      b.addEventListener("mouseenter", () => showTip(k, false));
+      b.addEventListener("mouseleave", hideTip);
+      b.addEventListener("focus", () => showTip(k, false));
+      b.addEventListener("click", (ev) => { ev.stopPropagation(); showTip(k, true); });
+      plot.appendChild(b);
+    });
+    plot.appendChild(tip);
+    box.appendChild(plot);
+    const ax = el("div","rc-axis"); ax.append(el("span",null, fmtDayShort(first)), el("span","muted", keys.length+" "+plural(keys.length,"отчёт","отчёта","отчётов")+" · до "+maxM+" мин"), el("span",null, fmtDayShort(last))); box.appendChild(ax);
+    if(chartPin[pinKey] && days[chartPin[pinKey]]) setTimeout(() => showTip(chartPin[pinKey], true), 0);
+    box.addEventListener("click", () => { if(chartPin[pinKey]){ delete chartPin[pinKey]; tip.hidden = true; plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); } });
+    return box;
+  }
+  function reportToText(cid, k, r){
+    const lines = [], d = parseKey(k);
+    lines.push("=== "+human(k)+" "+d.getFullYear()+" · "+mins(r)+" мин ===");
+    const fx = Array.isArray(r.f) ? r.f : [], label = (id) => { const f = fx.find(x => x && x.id===id) || fieldsOf(cid).find(x => x.id===id); return f ? str(f.label,60) : id; };
+    const val = (v) => Array.isArray(v) ? v.join("; ") : String(v);
+    if(Array.isArray(r.b) && r.b.length){
+      r.b.forEach(b => { if(!b) return; lines.push("", "▸ "+str(b.t,200)+(Number(b.m) > 0 ? " · "+Math.round(b.m)+" мин" : ""));
+        if(b.text) lines.push(String(b.text));
+        const bv = b.v && typeof b.v==="object" ? b.v : {}; Object.keys(bv).forEach(id => { if(id===b.tf) return; const x = bv[id]; if(x==null || x==="") return; lines.push(label(id)+": "+val(x)); }); });
+    } else {
+      if(typeof r.text==="string" && r.text) lines.push(r.text);
+      const vv = r.v && typeof r.v==="object" ? r.v : {}; Object.keys(vv).forEach(id => { const x = vv[id]; if(x==null || x==="" || (Array.isArray(x) && !x.length)) return; lines.push(label(id)+": "+val(x)); });
+    }
+    const ws = normalizeWords(r.words); if(ws.length) lines.push("Слова: "+ws.map(w => w.en + (w.ru ? " — "+w.ru : "")).join("; "));
+    return lines.join("\n");
+  }
+  function downloadReports(cid){
+    const days = daysOf(cid, state.me), keys = Object.keys(days).filter(isKey).sort();
+    if(!keys.length){ flash("Отчётов пока нет."); return; }
+    const c = ch(cid) || {}, total = keys.reduce((a,k) => a + mins(days[k]), 0);
+    const head = ["Obsession — "+str(c.title,120), "Участник: "+nameOf(cid, state.me), "Отчётов: "+keys.length+" · минут всего: "+total, "Выгружено: "+human(today())+" "+new Date().getFullYear(), ""];
+    const txt = head.join("\n") + "\n" + keys.map(k => reportToText(cid, k, days[k])).join("\n\n") + "\n";
+    const blob = new Blob(["﻿"+txt], { type:"text/plain;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = ("Obsession — "+str(c.title,60)+" — мои отчёты.txt").replace(/[\\/:*?"<>|]+/g," ");
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    flash("Скачано: "+keys.length+" "+plural(keys.length,"отчёт","отчёта","отчётов")+".");
+  }
   function entryNode(cid, uid, k, r){
     const m = mins(r), g = goalMinOf(cid);
-    const e = el("article","entry"+(m<g?" part":""));
+    const e = el("article","entry"+(m<g?" part":"")); e.id = "e-"+uid+"-"+k;
     const meta = el("div","meta"); meta.append(el("span","who num", k===today()?"Сегодня":human(k)), el("span","pill "+(m>=g?"done":"part"), m+" мин"));
     if(uid===state.me){ const ed = el("button","btn ghost","Изменить"); ed.type="button"; ed.addEventListener("click", () => { editingReport.add(cid); drafts.fDate=k; clearRepDrafts(); render(); const f=$("fText"); if(f){ f.scrollIntoView({behavior:"smooth",block:"center"}); f.focus({preventScroll:true}); } }); meta.appendChild(ed); }
     e.appendChild(meta);
