@@ -368,6 +368,11 @@ textarea.grow{resize:vertical;min-height:0;overflow:hidden}
 .entry .cards-fx .cf-item{grid-column:2}
 .btabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
 .btab{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* длинные названия книг переносятся, а не растягивают колонку */
+.report, .report > *, .bpane, .bpane > *, .btabs{min-width:0}
+.btab{white-space:normal !important;overflow-wrap:anywhere;text-align:left;line-height:1.3;border-radius:14px !important}
+.rbtitle, .entry .fx, .entry .meta, .pt, .ptt{overflow-wrap:anywhere}
+.report input, .report textarea, .report select{max-width:100%;min-width:0}
 .btab.on{background:#f2f2f2;color:#111;border-color:#f2f2f2;font-weight:600}
 .btab.ren{padding:6px 9px;margin-left:-3px}
 .btab.add{border-style:dashed;opacity:.85}
