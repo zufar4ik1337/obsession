@@ -342,8 +342,6 @@ textarea{resize:vertical;min-height:84px}
 .rc-dot:hover,.rc-dot.on{transform:scale(1.45);z-index:3}
 .rc-tip{position:absolute;z-index:4;transform:translate(-50%, calc(-100% - 14px));width:min(240px,80vw);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:13px}
 .rc-tip.below{transform:translate(-50%, 14px)}
-.rc-tip{pointer-events:none}
-.rc-tip .btn{pointer-events:auto}
 .col:has(.rc-tip:not([hidden])), .rchart:has(.rc-tip:not([hidden])){position:relative;z-index:20}
 .rc-th{display:flex;gap:8px;align-items:center;justify-content:space-between}
 .rc-ts{white-space:pre-wrap;overflow-wrap:anywhere;opacity:.85;max-height:7.5em;overflow:hidden}
@@ -1407,7 +1405,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const hover = window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches;
     let hideT = null;
     const reallyHide = () => { delete chartPin[pinKey]; tip.hidden = true; plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); };
-    const hideTip = () => { clearTimeout(hideT); hideT = setTimeout(() => { if(tip.matches(":hover")) return; if(!hover && chartPin[pinKey]) return; reallyHide(); }, 180); };
+    const hideTip = () => { clearTimeout(hideT); hideT = setTimeout(() => { if(tip.matches(":hover") || plot.querySelector(".rc-dot:hover")) return; if(!hover && chartPin[pinKey]) return; reallyHide(); }, 250); };
     tip.addEventListener("mouseenter", () => clearTimeout(hideT));
     tip.addEventListener("mouseleave", () => { if(hover) hideTip(); });
     keys.forEach(k => {
