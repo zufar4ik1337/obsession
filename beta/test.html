@@ -19,9 +19,9 @@
 // тестовые данные вместо Firebase
 (function(){
   const pad=n=>String(n).padStart(2,'0'); const k=(o)=>{const d=new Date(); d.setDate(d.getDate()-o); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};
-  const mk=(pat)=>{ const days={}; [...pat].forEach((c,i)=>{ if(c==='1') days[k(pat.length-1-i)]={minutes:15+((i*37)%60),text:'Учил слова и смотрел сериал',words:i%3?[]:[{en:'word'+i,ru:'слово'+i}]}; }); return days; };
+  const mk=(pat)=>{ const days={}; [...pat].forEach((c,i)=>{ if(c==='1') days[k(pat.length-1-i)]={minutes:15+Math.floor(Math.random()*60),text:'Учил слова и смотрел сериал',words:i%3?[]:[{en:'word'+i,ru:'слово'+i}]}; }); return days; };
   const data={
-    'challenges':[{id:'english',d:{title:'Английский каждый день',topic:'Английский',description:'20 минут в день',minutes:15+((i*37)%60),goalDays:365,startDate:k(12),penalty:500,dictionary:true,createdBy:'me',createdAt:'2026-11-09',paid:{u2:500}}}],
+    'challenges':[{id:'english',d:{title:'Английский каждый день',topic:'Английский',description:'20 минут в день',minutes:15+Math.floor(Math.random()*60),goalDays:365,startDate:k(12),penalty:500,dictionary:true,createdBy:'me',createdAt:'2026-11-09',paid:{u2:500}}}],
     'challenges/english/members':[
       {id:'me',d:{nick:'зуфи',joinedAt:k(12)+'T10:00:00Z',days:mk('1111011110111'),goals:{year:'Свободно говорить',months:{'2026-10':'старое'}},comments:{word0:{a:{text:'хороший пример',at:new Date().toISOString()}}}}},
       {id:'u2',d:{nick:'Друг',joinedAt:k(12)+'T11:00:00Z',days:mk('1100111001110')}},
