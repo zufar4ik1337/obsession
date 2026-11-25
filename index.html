@@ -331,11 +331,13 @@ textarea{resize:vertical;min-height:84px}
 .coltools{display:flex;flex-wrap:wrap;gap:6px}
 .coltools .btn{width:auto}
 .rchart{display:grid;gap:4px;border:1px solid var(--line);border-radius:12px;padding:12px 14px 8px;background:rgba(255,255,255,.02)}
-.rc-plot{position:relative;height:130px;margin:10px 6px 4px}
+.rc-plot{position:relative;height:150px;margin:10px 8px 4px 34px}
+.rc-grid{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}
+.rc-yl{position:absolute;left:-34px;width:28px;text-align:right;transform:translateY(-50%);font-size:10px;opacity:.6;font-variant-numeric:tabular-nums}
 .rc-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .rc-line{fill:none;stroke:var(--muted);stroke-width:1.5;vector-effect:non-scaling-stroke;opacity:.7}
-.rc-goal{stroke:var(--line);stroke-width:1;stroke-dasharray:4 4;vector-effect:non-scaling-stroke}
-.rc-gl{position:absolute;right:0;transform:translateY(-120%);font-size:10px;opacity:.5}
+.rc-goal{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4;vector-effect:non-scaling-stroke;opacity:.8}
+.rc-gl{position:absolute;right:0;transform:translateY(-120%);font-size:10px;opacity:.75}
 .rc-dot{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);padding:0;cursor:pointer;z-index:1}
 .rc-dot.done{background:var(--ink)}
 .rc-dot::after{content:"";position:absolute;inset:-8px}
@@ -350,7 +352,7 @@ textarea{resize:vertical;min-height:84px}
 .rc-th{display:flex;gap:8px;align-items:center;justify-content:space-between}
 .rc-ts{white-space:pre-wrap;overflow-wrap:anywhere;opacity:.85;max-height:7.5em;overflow:hidden}
 .rc-tip .btn{width:auto;justify-self:start}
-.rc-axis{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.7}
+.rc-axis{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.7;margin-left:34px}
 .entry.flash{animation:eflash 1.6s ease}
 @keyframes eflash{0%,40%{box-shadow:0 0 0 2px var(--ink)}100%{box-shadow:none}}
 .cardpos{font-size:12px;margin-top:6px;display:flex;gap:10px;justify-content:center;align-items:center;font-variant-numeric:tabular-nums}
@@ -1383,16 +1385,23 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const box = el("div","rchart"); if(!keys.length) return box;
     const first = keys[0], last = keys[keys.length-1] > today() ? keys[keys.length-1] : today();
     const span = Math.max(1, Math.round((parseKey(last) - parseKey(first)) / 864e5));
-    const g = goalMinOf(cid), maxM = Math.max(g, ...keys.map(k => mins(days[k]))) || 1;
+    // шкала своя у каждого: от его минимума до максимума (с нормой дня), с «круглыми» делениями
+    const g = goalMinOf(cid), vals = keys.map(k => mins(days[k]));
+    const vMin = Math.min(g, ...vals), vMax = Math.max(g, ...vals), maxM = Math.max(...vals);
+    const STEPS = [1,2,5,10,15,20,30,45,60,90,120,180,240];
+    const step = STEPS.find(x => (vMax - vMin) / x <= 4) || 300;
+    const lo = Math.max(0, Math.floor((vMin - step*0.4) / step) * step), hi = Math.max(lo + step, Math.ceil((vMax + step*0.4) / step) * step);
     const X = (k) => (span ? Math.round((parseKey(k) - parseKey(first)) / 864e5) / span : 0.5) * 100;
-    const Y = (m) => 100 - Math.min(1, m / maxM) * 100;
+    const Y = (m) => 100 - Math.max(0, Math.min(1, (m - lo) / (hi - lo))) * 100;
     const plot = el("div","rc-plot");
     const svgNS = "http://www.w3.org/2000/svg", svg = document.createElementNS(svgNS,"svg");
     svg.setAttribute("viewBox","0 0 100 100"); svg.setAttribute("preserveAspectRatio","none"); svg.setAttribute("class","rc-svg"); svg.setAttribute("aria-hidden","true");
+    for(let t = lo; t <= hi + 1e-9; t += step){ const ln = document.createElementNS(svgNS,"line"); ln.setAttribute("x1",0); ln.setAttribute("x2",100); ln.setAttribute("y1",Y(t)); ln.setAttribute("y2",Y(t)); ln.setAttribute("class","rc-grid"); svg.appendChild(ln);
+      const lb = el("span","rc-yl", String(t)); lb.style.top = Y(t)+"%"; plot.appendChild(lb); }
     const gl = document.createElementNS(svgNS,"line"); gl.setAttribute("x1",0); gl.setAttribute("x2",100); gl.setAttribute("y1",Y(g)); gl.setAttribute("y2",Y(g)); gl.setAttribute("class","rc-goal"); svg.appendChild(gl);
     const pl = document.createElementNS(svgNS,"polyline"); pl.setAttribute("points", keys.map(k => X(k)+","+Y(mins(days[k]))).join(" ")); pl.setAttribute("class","rc-line"); svg.appendChild(pl);
     plot.appendChild(svg);
-    plot.appendChild(el("span","rc-gl", g+" мин")); plot.lastChild.style.top = Y(g)+"%";
+    plot.appendChild(el("span","rc-gl", "норма "+g)); plot.lastChild.style.top = Y(g)+"%";
     const tip = el("div","rc-tip"); tip.hidden = true;
     const pinKey = cid+"/"+uid;
     const showTip = (k, pinned) => {
@@ -1428,7 +1437,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     });
     plot.appendChild(tip);
     box.appendChild(plot);
-    const ax = el("div","rc-axis"); ax.append(el("span",null, fmtDayShort(first)), el("span","muted", keys.length+" "+plural(keys.length,"отчёт","отчёта","отчётов")+" · до "+maxM+" мин"), el("span",null, fmtDayShort(last))); box.appendChild(ax);
+    const ax = el("div","rc-axis"); ax.append(el("span",null, fmtDayShort(first)), el("span","muted", keys.length+" "+plural(keys.length,"отчёт","отчёта","отчётов")+" · мин в день, макс "+maxM), el("span",null, fmtDayShort(last))); box.appendChild(ax);
     if(!(window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches) && chartPin[pinKey] && days[chartPin[pinKey]]) setTimeout(() => showTip(chartPin[pinKey], true), 0);
     box.addEventListener("click", () => { if(chartPin[pinKey]){ delete chartPin[pinKey]; tip.hidden = true; plot.querySelectorAll(".rc-dot.on").forEach(d => d.classList.remove("on")); } });
     return box;
