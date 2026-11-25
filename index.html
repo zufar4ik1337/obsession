@@ -1417,7 +1417,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
   }
   function reportToText(cid, k, r){
     const lines = [], d = parseKey(k);
-    lines.push("=== "+human(k)+" "+d.getFullYear()+" · "+mins(r)+" мин ===");
+    lines.push("=== "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+", "+WD[d.getDay()]+" · "+mins(r)+" мин ===");
     const fx = Array.isArray(r.f) ? r.f : [], label = (id) => { const f = fx.find(x => x && x.id===id) || fieldsOf(cid).find(x => x.id===id); return f ? str(f.label,60) : id; };
     const val = (v) => Array.isArray(v) ? v.join("; ") : String(v);
     if(Array.isArray(r.b) && r.b.length){
@@ -1435,7 +1435,7 @@ function computeStreak(days, fromKey, todayKey, goalMin, addDays, minsOf){
     const days = daysOf(cid, state.me), keys = Object.keys(days).filter(isKey).sort();
     if(!keys.length){ flash("Отчётов пока нет."); return; }
     const c = ch(cid) || {}, total = keys.reduce((a,k) => a + mins(days[k]), 0);
-    const head = ["Obsession — "+str(c.title,120), "Участник: "+nameOf(cid, state.me), "Отчётов: "+keys.length+" · минут всего: "+total, "Выгружено: "+human(today())+" "+new Date().getFullYear(), ""];
+    const head = ["Obsession — "+str(c.title,120), "Участник: "+nameOf(cid, state.me), "Отчётов: "+keys.length+" · минут всего: "+total, "Выгружено: "+new Date().toLocaleDateString("ru-RU"), ""];
     const txt = head.join("\n") + "\n" + keys.map(k => reportToText(cid, k, days[k])).join("\n\n") + "\n";
     const blob = new Blob(["﻿"+txt], { type:"text/plain;charset=utf-8" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
